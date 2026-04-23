@@ -1,0 +1,22 @@
+!SESSION 2026-04-23 14:43:34.213 -----------------------------------------------
+eclipse.buildId=Version 2.1.0
+java.version=21.0.9
+java.vendor=Eclipse Adoptium
+BootLoader constants: OS=macosx, ARCH=x86_64, WS=cocoa, NL=en_IQ
+Framework arguments:  -keyring /Users/hussamaldean/.eclipse_keyring
+Command-line arguments:  -os macosx -ws cocoa -arch x86_64 -keyring /Users/hussamaldean/.eclipse_keyring
+
+!ENTRY com.st.stm32cube.ide.mcu.informationcenter 1 1 2026-04-23 14:44:01.046
+!MESSAGE Log4j2 initialized with config file /Users/hussamaldean/Documents/GitHub/EmbeddedExpertPosts/Embedded Expert Post Projects/Projects/.metadata/.log4j2.xml
+
+!ENTRY com.st.stm32cube.ide.mcu.ide 1 1 2026-04-23 14:44:06.111
+!MESSAGE Started RMI Server, listening on port 41337
+
+!ENTRY org.eclipse.equinox.p2.metadata.repository 4 1000 2026-04-23 14:44:24.688
+!MESSAGE No repository found at https://sw-center.st.com/stm32cubeide/openstlinux/updatesite1.
+
+!ENTRY org.eclipse.equinox.p2.metadata.repository 4 1000 2026-04-23 14:44:24.754
+!MESSAGE No repository found at https://sw-center.st.com/stm32cubeide/updatesite1.
+
+!ENTRY org.eclipse.cdt.core 1 0 2026-04-23 14:44:47.509
+!MESSAGE Indexed 'LL_Blinking LED' (9 sources, 99 headers) in 3.47 sec: 9,256 declarations; 24,824 references; 1 unresolved inclusions; 92 syntax errors; 240 unresolved names (0.7%)
