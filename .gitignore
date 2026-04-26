@@ -1,7 +1,9 @@
-.venv
-*.pdf
+# Ignore build folders in all projects
+Debug/
+Release/
+build/
 
-
+.metadata/
 
 #################
 # Mac OS only
