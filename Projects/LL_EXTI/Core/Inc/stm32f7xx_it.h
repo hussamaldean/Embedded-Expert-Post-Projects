@@ -47,9 +47,9 @@ extern "C" {
 
 /* Exported functions prototypes ---------------------------------------------*/
 void SysTick_Handler(void);
+void EXTI15_10_IRQHandler(void);
 /* USER CODE BEGIN EFP */
 uint32_t getCurrentTicks(void);
-void TickInc(void);
 /* USER CODE END EFP */
 
 #ifdef __cplusplus

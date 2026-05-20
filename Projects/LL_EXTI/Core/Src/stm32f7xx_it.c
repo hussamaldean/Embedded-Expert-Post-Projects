@@ -57,7 +57,7 @@ uint32_t getCurrentTicks(void)
 	return temp_ticks;
 }
 
-void TickInc(void)
+static void TickInc(void)
 {
 	ticks++;
 }
@@ -67,6 +67,7 @@ void TickInc(void)
 
 /* USER CODE BEGIN EV */
 extern volatile uint8_t exti_triggered;
+extern volatile uint32_t currentTime;
 /* USER CODE END EV */
 
 /******************************************************************************/
@@ -93,6 +94,28 @@ void SysTick_Handler(void)
 /* For the available peripheral interrupt handler names,                      */
 /* please refer to the startup file (startup_stm32f7xx.s).                    */
 /******************************************************************************/
+
+/**
+  * @brief This function handles EXTI line[15:10] interrupts.
+  */
+void EXTI15_10_IRQHandler(void)
+{
+  /* USER CODE BEGIN EXTI15_10_IRQn 0 */
+
+  /* USER CODE END EXTI15_10_IRQn 0 */
+  if (LL_EXTI_IsActiveFlag_0_31(LL_EXTI_LINE_13) != RESET)
+  {
+    LL_EXTI_ClearFlag_0_31(LL_EXTI_LINE_13);
+    /* USER CODE BEGIN LL_EXTI_LINE_13 */
+    exti_triggered=1;
+    currentTime=getCurrentTicks();
+    LL_GPIO_SetOutputPin(GPIOB, LL_GPIO_PIN_7);
+    /* USER CODE END LL_EXTI_LINE_13 */
+  }
+  /* USER CODE BEGIN EXTI15_10_IRQn 1 */
+
+  /* USER CODE END EXTI15_10_IRQn 1 */
+}
 
 /* USER CODE BEGIN 1 */
 

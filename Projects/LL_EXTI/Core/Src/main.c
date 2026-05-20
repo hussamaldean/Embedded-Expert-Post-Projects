@@ -46,11 +46,15 @@
 volatile uint8_t exti_triggered;
 
 volatile uint32_t currentTime;
+
+#define period 2000
+
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 static void MPU_Config(void);
+static void MX_NVIC_Init(void);
 /* USER CODE BEGIN PFP */
 
 /* USER CODE END PFP */
@@ -99,6 +103,9 @@ int main(void)
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
+
+  /* Initialize interrupts */
+  MX_NVIC_Init();
   /* USER CODE BEGIN 2 */
   SysTick->CTRL|=SysTick_CTRL_TICKINT_Msk;
   /* USER CODE END 2 */
@@ -107,11 +114,21 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-	  //LL_mDelay(200);
+	 if((getCurrentTicks()-currentTime>period)&&exti_triggered==1)
+	 {
+		 LL_GPIO_ResetOutputPin(GPIOB, LL_GPIO_PIN_7);
+		 exti_triggered=0;
+
+	 }
+
+	 if(getCurrentTicks()%500==0)
+	 {
+		 LL_GPIO_TogglePin(GPIOB, LL_GPIO_PIN_14);
+	 }
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-	  currentTime=getCurrentTicks()/1000;
+
   }
   /* USER CODE END 3 */
 }
@@ -151,6 +168,17 @@ void SystemClock_Config(void)
 
    /* Set Timers Clock Prescalers */
   LL_RCC_SetTIMPrescaler(LL_RCC_TIM_PRESCALER_TWICE);
+}
+
+/**
+  * @brief NVIC Configuration.
+  * @retval None
+  */
+static void MX_NVIC_Init(void)
+{
+  /* EXTI15_10_IRQn interrupt configuration */
+  NVIC_SetPriority(EXTI15_10_IRQn, NVIC_EncodePriority(NVIC_GetPriorityGrouping(),0, 0));
+  NVIC_EnableIRQ(EXTI15_10_IRQn);
 }
 
 /* USER CODE BEGIN 4 */
