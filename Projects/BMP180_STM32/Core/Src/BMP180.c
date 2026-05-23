@@ -36,11 +36,12 @@ unsigned long B7 = 0;
 long Press = 0;
 
 typedef struct
-	{
+{
 	float temperature;
 	float pressure;
-	}BMP180Sensor_t;
-	BMP180Sensor_t BMP180;
+}BMP180Sensor_t;
+
+BMP180Sensor_t BMP180;
 
 
 
