@@ -76,14 +76,14 @@ void update_BMP180(OSS OSS)
 	UT=(data_tem[0]<<8)+data_tem[1];
 
 	uint8_t oss;
-	switch (OSS)
-	{
-		case OSS0: oss=0; break;
-		case OSS1: oss=1; break;
-		case OSS2: oss=2; break;
-		case OSS3: oss=3; break;
-		default :  oss=0; break;
-	}
+		switch (OSS)
+		{
+			case OSS0: oss=0; break;
+			case OSS1: oss=1; break;
+			case OSS2: oss=2; break;
+			case OSS3: oss=3; break;
+			default :  oss=0; break;
+		}
 
 	datatowrite=0x34+(oss<<6);
 
