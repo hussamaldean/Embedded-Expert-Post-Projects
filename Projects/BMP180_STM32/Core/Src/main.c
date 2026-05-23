@@ -26,7 +26,7 @@
 /* USER CODE BEGIN Includes */
 #include "stdio.h"
 
-#include "math.h"
+#include "BMP180.h"
 
 /* USER CODE END Includes */
 
@@ -48,7 +48,7 @@
 /* Private variables ---------------------------------------------------------*/
 
 /* USER CODE BEGIN PV */
-
+float pressure, temperature;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -60,13 +60,7 @@ static void MPU_Config(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-float calcSin(float degree)
-{
-	float radian;
-	radian=degree * (M_PI / 180.0);
 
-	return sin(radian);
-}
 /* USER CODE END 0 */
 
 /**
@@ -104,6 +98,7 @@ int main(void)
   MX_I2C1_Init();
   MX_USART3_UART_Init();
   /* USER CODE BEGIN 2 */
+  BMP180_init();
 
   /* USER CODE END 2 */
 
@@ -114,14 +109,13 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
+	  update_BMP180(OSS3);
+	  temperature=get_temperature();
+	  pressure=get_pressure();
 
+	  printf("Temperature = %0.4f and Pressure =%0.4f\r\n",temperature,pressure);
 
-
-	  for (int i=0;i<=180;i++)
-	  {
-		  printf("Sine Value of %d degree is %0.10f \r\n",i,calcSin(i));
-		  HAL_Delay(10);
-	  }
+	  HAL_Delay(200);
 
 
   }
