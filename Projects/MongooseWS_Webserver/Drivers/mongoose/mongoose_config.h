@@ -7,7 +7,6 @@
 #define MG_ENABLE_TCPIP 1
 #define MG_ENABLE_CUSTOM_MILLIS 1
 #define MG_ENABLE_CUSTOM_RANDOM 1
-#define MG_ENABLE_PACKED_FS 1
 #define MG_ENABLE_DRIVER_STM32F 1
 #define MG_OTA MG_OTA_STM32F
 // use HAL-defined execute-in-ram section

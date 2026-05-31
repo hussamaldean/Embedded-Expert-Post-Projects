@@ -12,9 +12,9 @@ extern "C" {
 #include "mongoose.h"
 
 #define WIZARD_ENABLE_HTTP 1
-#define WIZARD_ENABLE_HTTPS 1
+#define WIZARD_ENABLE_HTTPS 0
 #define WIZARD_ENABLE_HTTP_UI 1
-#define WIZARD_ENABLE_HTTP_UI_LOGIN 0
+#define WIZARD_ENABLE_HTTP_UI_LOGIN 1
 
 #define WIZARD_ENABLE_WEBSOCKET 1
 
@@ -26,7 +26,7 @@ extern "C" {
 #define WIZARD_ENABLE_SNTP 1  // Enable time sync.
 #define WIZARD_SNTP_TYPE 0    // 0: default Google, 1: DHCP, 2: custom
 #define WIZARD_SNTP_URL "udp://time.google.com:123"  // Custom SNTP server URL
-#define WIZARD_SNTP_INTERVAL_SECONDS 500            // Frequency of SNTP syncs
+#define WIZARD_SNTP_INTERVAL_SECONDS 3600            // Frequency of SNTP syncs
 
 #define WIZARD_DNS_TYPE 0  // 0: default Google, 1: DHCP, 2: custom
 #define WIZARD_DNS_URL "udp://8.8.8.8:53"  // Custom DNS server URL
@@ -119,25 +119,86 @@ void glue_update_state(void);
 
 void glue_sntp_on_time(uint64_t utc_time_in_milliseconds);
 
-struct adc_value {
-  int adc_data;
-};
-void glue_get_adc_value(struct adc_value *);
-void glue_set_adc_value(struct adc_value *);
 
-struct PWM {
-  int duty;
+int    glue_authenticate(const char *user, const char *pass);
+
+void glue_start_reboot(struct mg_str);  // Start an action
+bool glue_check_reboot(void);  // Check if action is still in progress
+
+void glue_start_reformat(struct mg_str);  // Start an action
+bool glue_check_reformat(void);  // Check if action is still in progress
+
+void *glue_ota_begin_firmware_update(char *file_name, size_t total_size);
+bool glue_ota_end_firmware_update(void *context);
+bool glue_ota_write_firmware_update(void *context, void *buf, size_t len);
+
+size_t glue_file_read_file(char *path, size_t offset, void *buf, size_t len);
+bool glue_file_write_file(char *path, size_t offset, void *buf, size_t len);
+
+void glue_start_console_send(struct mg_str);  // Start an action
+bool glue_check_console_send(void);  // Check if action is still in progress
+
+
+struct state {
+  int speed;
+  int temperature;
+  int humidity;
+  int uptime;
+  char version[20];
+  bool online;
+  bool lights;
+  int level;
+  char ota_status[120];
 };
-void glue_get_PWM(struct PWM *);
-void glue_set_PWM(struct PWM *);
+void glue_get_state(struct state *);
 
 struct leds {
-  bool led3;
   bool led1;
   bool led2;
+  bool led3;
 };
 void glue_get_leds(struct leds *);
 void glue_set_leds(struct leds *);
+
+struct network_settings {
+  char ip_address[20];
+  char gw_address[20];
+  char netmask[20];
+  bool dhcp;
+};
+void glue_get_network_settings(struct network_settings *);
+void glue_set_network_settings(struct network_settings *);
+
+struct settings {
+  char string_val[40];
+  int log_level;
+  double double_val;
+  int int_val;
+  bool bool_val;
+  int ota_interval;
+  char ota_metadata_url[120];
+};
+void glue_get_settings(struct settings *);
+void glue_set_settings(struct settings *);
+
+struct security {
+  char admin_password[40];
+  char user_password[40];
+};
+void glue_get_security(struct security *);
+void glue_set_security(struct security *);
+
+struct events {
+  int id;
+  int timestamp;
+  int priority;
+  int status;
+  char message[100];
+};
+bool glue_get_events(struct events *, size_t index);
+void glue_set_events(struct events *, size_t index);
+
+
 
 
 #ifdef __cplusplus

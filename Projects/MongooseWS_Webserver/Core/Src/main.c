@@ -129,51 +129,7 @@ bool mg_random(void *buf, size_t len)
 
 
 
-void get_leds(struct leds * LEDs)
-{
-	LEDs->led1=(HAL_GPIO_ReadPin(LD1_GPIO_Port, LD1_Pin));
-	LEDs->led2=(HAL_GPIO_ReadPin(LD2_GPIO_Port, LD2_Pin));
-	LEDs->led3=(HAL_GPIO_ReadPin(LD3_GPIO_Port, LD3_Pin));
-}
-void set_leds(struct leds *LEDs)
-{
-	HAL_GPIO_WritePin(LD1_GPIO_Port, LD1_Pin, LEDs->led1);
-	HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, LEDs->led2);
-	HAL_GPIO_WritePin(LD3_GPIO_Port, LD3_Pin, LEDs->led3);
-}
 
-void get_pwm(struct PWM *pwm)
-{
-	pwm->duty=__HAL_TIM_GET_COMPARE(&htim4, TIM_CHANNEL_4);
-
-}
-
-void set_PWM(struct PWM *pwm)
-{
-	__HAL_TIM_SET_COMPARE(&htim4, TIM_CHANNEL_4, pwm->duty);
-
-
-}
-
-long map(long x, long in_min, long in_max, long out_min, long out_max) {
-  return (x - in_min) * (out_max - out_min + 1) / (in_max - in_min + 1) + out_min;
-}
-
-int readADC(void)
-{
-  HAL_ADC_Start(&hadc1);
-  HAL_ADC_PollForConversion(&hadc1, 100);
-  uint16_t ADC_VAL = HAL_ADC_GetValue(&hadc1);
-  HAL_ADC_Stop(&hadc1);
-  uint16_t val = map(ADC_VAL, 0, 4095, 0, 100);
-  return val;
-}
-
-
-void get_ADC_Value(struct adc_value * adcData)
-{
-	adcData->adc_data=readADC();
-}
 
 /* USER CODE END 0 */
 
@@ -221,14 +177,7 @@ int main(void)
 
   mongoose_init();
 
-  mongoose_set_http_handlers("leds", get_leds, set_leds);
 
-  mongoose_set_http_handlers("PWM", get_pwm, set_PWM);
-
-  mongoose_set_http_handlers("adc_value", get_ADC_Value, NULL);
-
-
-  mongoose_add_ws_reporter(200, "adc_value");
 
 
   /* USER CODE END 2 */

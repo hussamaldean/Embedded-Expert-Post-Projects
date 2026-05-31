@@ -166,29 +166,79 @@ struct custom_api_handler {
 };
 static struct custom_api_handler *s_custom_handlers;
 
-struct attribute s_adc_value_attributes[] = {
-  {"adc_data", "int", NULL, offsetof(struct adc_value, adc_data), 0, false},
-  {NULL, NULL, NULL, 0, 0, false}
-};
-struct attribute s_PWM_attributes[] = {
-  {"duty", "int", NULL, offsetof(struct PWM, duty), 0, false},
+struct attribute s_state_attributes[] = {
+  {"speed", "int", NULL, offsetof(struct state, speed), 0, false},
+  {"temperature", "int", NULL, offsetof(struct state, temperature), 0, false},
+  {"humidity", "int", NULL, offsetof(struct state, humidity), 0, false},
+  {"uptime", "int", NULL, offsetof(struct state, uptime), 0, false},
+  {"version", "string", NULL, offsetof(struct state, version), 20, false},
+  {"online", "bool", NULL, offsetof(struct state, online), 0, false},
+  {"lights", "bool", NULL, offsetof(struct state, lights), 0, false},
+  {"level", "int", NULL, offsetof(struct state, level), 0, false},
+  {"ota_status", "string", NULL, offsetof(struct state, ota_status), 120, false},
   {NULL, NULL, NULL, 0, 0, false}
 };
 struct attribute s_leds_attributes[] = {
-  {"led3", "bool", NULL, offsetof(struct leds, led3), 0, false},
   {"led1", "bool", NULL, offsetof(struct leds, led1), 0, false},
   {"led2", "bool", NULL, offsetof(struct leds, led2), 0, false},
+  {"led3", "bool", NULL, offsetof(struct leds, led3), 0, false},
+  {NULL, NULL, NULL, 0, 0, false}
+};
+struct attribute s_network_settings_attributes[] = {
+  {"ip_address", "string", NULL, offsetof(struct network_settings, ip_address), 20, false},
+  {"gw_address", "string", NULL, offsetof(struct network_settings, gw_address), 20, false},
+  {"netmask", "string", NULL, offsetof(struct network_settings, netmask), 20, false},
+  {"dhcp", "bool", NULL, offsetof(struct network_settings, dhcp), 0, false},
+  {NULL, NULL, NULL, 0, 0, false}
+};
+struct attribute s_settings_attributes[] = {
+  {"string_val", "string", NULL, offsetof(struct settings, string_val), 40, false},
+  {"log_level", "int", NULL, offsetof(struct settings, log_level), 0, false},
+  {"double_val", "double", "%.5f", offsetof(struct settings, double_val), 0, false},
+  {"int_val", "int", NULL, offsetof(struct settings, int_val), 0, false},
+  {"bool_val", "bool", NULL, offsetof(struct settings, bool_val), 0, false},
+  {"ota_interval", "int", NULL, offsetof(struct settings, ota_interval), 0, false},
+  {"ota_metadata_url", "string", NULL, offsetof(struct settings, ota_metadata_url), 120, false},
+  {NULL, NULL, NULL, 0, 0, false}
+};
+struct attribute s_security_attributes[] = {
+  {"admin_password", "string", NULL, offsetof(struct security, admin_password), 40, false},
+  {"user_password", "string", NULL, offsetof(struct security, user_password), 40, false},
+  {NULL, NULL, NULL, 0, 0, false}
+};
+struct attribute s_events_attributes[] = {
+  {"id", "int", NULL, offsetof(struct events, id), 0, false},
+  {"timestamp", "int", NULL, offsetof(struct events, timestamp), 0, false},
+  {"priority", "int", NULL, offsetof(struct events, priority), 0, false},
+  {"status", "int", NULL, offsetof(struct events, status), 0, false},
+  {"message", "string", NULL, offsetof(struct events, message), 100, false},
   {NULL, NULL, NULL, 0, 0, false}
 };
 
-struct apihandler_data s_apihandler_adc_value = {{"adc_value", "data", false, 0, 0, 0UL}, s_adc_value_attributes, sizeof(struct adc_value), (void (*)(void *)) glue_get_adc_value, (void (*)(void *)) glue_set_adc_value};
-struct apihandler_data s_apihandler_PWM = {{"PWM", "data", false, 0, 0, 0UL}, s_PWM_attributes, sizeof(struct PWM), (void (*)(void *)) glue_get_PWM, (void (*)(void *)) glue_set_PWM};
-struct apihandler_data s_apihandler_leds = {{"leds", "data", false, 0, 0, 0UL}, s_leds_attributes, sizeof(struct leds), (void (*)(void *)) glue_get_leds, (void (*)(void *)) glue_set_leds};
+struct apihandler_action s_apihandler_reboot = {{"reboot", "action", false, 3, 7, 0UL}, glue_check_reboot, glue_start_reboot};
+struct apihandler_action s_apihandler_reformat = {{"reformat", "action", false, 3, 7, 0UL}, glue_check_reformat, glue_start_reformat};
+struct apihandler_ota s_apihandler_firmware_update = {{"firmware_update", "ota", false, 3, 7, 0UL}, glue_ota_begin_firmware_update, glue_ota_end_firmware_update, glue_ota_write_firmware_update};
+struct apihandler_file s_apihandler_file = {{"file", "file", false, 3, 7, 0UL}, glue_file_read_file, glue_file_write_file};
+struct apihandler_action s_apihandler_console_send = {{"console_send", "action", false, 3, 7, 0UL}, glue_check_console_send, glue_start_console_send};
+struct apihandler_data s_apihandler_state = {{"state", "data", true, 0, 0, 0UL}, s_state_attributes, sizeof(struct state), (void (*)(void *)) glue_get_state, NULL};
+struct apihandler_data s_apihandler_leds = {{"leds", "data", false, 3, 3, 0UL}, s_leds_attributes, sizeof(struct leds), (void (*)(void *)) glue_get_leds, (void (*)(void *)) glue_set_leds};
+struct apihandler_data s_apihandler_network_settings = {{"network_settings", "data", false, 3, 7, 0UL}, s_network_settings_attributes, sizeof(struct network_settings), (void (*)(void *)) glue_get_network_settings, (void (*)(void *)) glue_set_network_settings};
+struct apihandler_data s_apihandler_settings = {{"settings", "data", false, 3, 7, 0UL}, s_settings_attributes, sizeof(struct settings), (void (*)(void *)) glue_get_settings, (void (*)(void *)) glue_set_settings};
+struct apihandler_data s_apihandler_security = {{"security", "data", false, 7, 7, 0UL}, s_security_attributes, sizeof(struct security), (void (*)(void *)) glue_get_security, (void (*)(void *)) glue_set_security};
+struct apihandler_array s_apihandler_events = {{"events", "array", false, 0, 0, 0UL}, s_events_attributes, sizeof(struct events), (bool (*)(void *, size_t)) glue_get_events, (void (*)(void *, size_t)) glue_set_events};
 
 static struct apihandler *s_apihandlers[] = {
-  (struct apihandler *) &s_apihandler_adc_value,
-  (struct apihandler *) &s_apihandler_PWM,
-  (struct apihandler *) &s_apihandler_leds
+  (struct apihandler *) &s_apihandler_reboot,
+  (struct apihandler *) &s_apihandler_reformat,
+  (struct apihandler *) &s_apihandler_firmware_update,
+  (struct apihandler *) &s_apihandler_file,
+  (struct apihandler *) &s_apihandler_console_send,
+  (struct apihandler *) &s_apihandler_state,
+  (struct apihandler *) &s_apihandler_leds,
+  (struct apihandler *) &s_apihandler_network_settings,
+  (struct apihandler *) &s_apihandler_settings,
+  (struct apihandler *) &s_apihandler_security,
+  (struct apihandler *) &s_apihandler_events
 };
 
 static struct apihandler *get_api_handler(struct mg_str name) {
