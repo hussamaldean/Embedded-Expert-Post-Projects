@@ -62,11 +62,11 @@ void SystemClock_Config(void);
 
 void UART_Send_Char(char ch)
 {
-	while (!LL_USART_IsActiveFlag_TXE(USART2));   // Wait until TX buffer is empty
+	while (!LL_USART_IsActiveFlag_TXE(USART2));   	// Wait until TX buffer is empty
 
-	LL_USART_TransmitData8(USART2, ch);
+	LL_USART_TransmitData8(USART2, ch);				// Send byte
 
-	while (!LL_USART_IsActiveFlag_TC(USART2));
+	while (!LL_USART_IsActiveFlag_TC(USART2));		// Wait for complete transmission
 }
 
 
@@ -75,8 +75,13 @@ void UART_Send_String(char *ch , uint16_t len)
 {
 	for (int i=0;i<len;i++)
 	{
-		UART_Send_Char(ch[i]);
+		while (!LL_USART_IsActiveFlag_TXE(USART2));   	// Wait until TX buffer is empty
+
+		LL_USART_TransmitData8(USART2, ch[i]);				// Send byte
+
 	}
+
+	while (!LL_USART_IsActiveFlag_TC(USART2));		// Wait for complete transmission
 }
 
 
@@ -132,11 +137,11 @@ int main(void)
     /* USER CODE BEGIN 3 */
 	  buff_len=sprintf(uart_buff,"Counter Value =%d \r\n",counter++);
 
-	  for (int i=0;i<buff_len;i++)
-	  {
-		  UART_Send_Char(uart_buff[i]);
-	  }
-	  //UART_Send_String(uart_buff,buff_len);
+	 // for (int i=0;i<buff_len;i++)
+	 // {
+		//  UART_Send_Char(uart_buff[i]);
+	  //}
+	  UART_Send_String(uart_buff,buff_len);
 	  LL_mDelay(10);
 
 
