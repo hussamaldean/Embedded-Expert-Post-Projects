@@ -18,12 +18,13 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
-#include "usart.h"
+#include "dma.h"
+#include "i2s.h"
 #include "gpio.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-#include "stdio.h"
+
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -44,15 +45,7 @@
 /* Private variables ---------------------------------------------------------*/
 
 /* USER CODE BEGIN PV */
-char uart_buff[50]={0};
-uint8_t counter;
-
-uint16_t buff_len;
-
-
-uint16_t tx_index;
-
-uint8_t Tx_Done;
+uint16_t data[7]={0x00,0x0011,0x0022,0x0033,0x0044,0x0055,0x0066};
 
 /* USER CODE END PV */
 
@@ -64,66 +57,6 @@ void SystemClock_Config(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-
-void UART_Send_Char(char ch)
-{
-	while (!LL_USART_IsActiveFlag_TXE(USART2));   	// Wait until TX buffer is empty
-
-	LL_USART_TransmitData8(USART2, ch);				// Send byte
-
-	while (!LL_USART_IsActiveFlag_TC(USART2));		// Wait for complete transmission
-}
-
-
-void UART_Send_String(char *ch , uint16_t len)
-
-{
-	for (int i=0;i<len;i++)
-	{
-		while (!LL_USART_IsActiveFlag_TXE(USART2));   	// Wait until TX buffer is empty
-
-		LL_USART_TransmitData8(USART2, ch[i]);				// Send byte
-
-	}
-
-	while (!LL_USART_IsActiveFlag_TC(USART2));		// Wait for complete transmission
-}
-
-
-void USART2_IRQHandler(void)
-{
-	if (LL_USART_IsActiveFlag_TXE(USART2) && LL_USART_IsEnabledIT_TXE(USART2))
-	{
-		if (tx_index < buff_len)
-		{
-			LL_USART_TransmitData8(USART2, uart_buff[tx_index++]);
-
-			if (tx_index == buff_len)
-			{
-				LL_USART_DisableIT_TXE(USART2);
-				LL_USART_EnableIT_TC(USART2);
-			}
-		}
-	}
-
-	if (LL_USART_IsActiveFlag_TC(USART2) && LL_USART_IsEnabledIT_TC(USART2))
-	{
-	        LL_USART_ClearFlag_TC(USART2);
-	        LL_USART_DisableIT_TC(USART2);
-	        Tx_Done = 1;
-	}
-}
-
-void UART_Send_IT(void)
-{
-	tx_index = 0;
-	Tx_Done = 0;
-
-	LL_USART_ClearFlag_TC(USART2);
-	LL_USART_EnableIT_TXE(USART2);
-
-}
-
 
 /* USER CODE END 0 */
 
@@ -141,14 +74,7 @@ int main(void)
   /* MCU Configuration--------------------------------------------------------*/
 
   /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
-  LL_APB2_GRP1_EnableClock(LL_APB2_GRP1_PERIPH_SYSCFG);
-  LL_APB1_GRP1_EnableClock(LL_APB1_GRP1_PERIPH_PWR);
-
-  /* System interrupt init*/
-  NVIC_SetPriorityGrouping(NVIC_PRIORITYGROUP_4);
-
-  /* SysTick_IRQn interrupt configuration */
-  NVIC_SetPriority(SysTick_IRQn, NVIC_EncodePriority(NVIC_GetPriorityGrouping(),15, 0));
+  HAL_Init();
 
   /* USER CODE BEGIN Init */
 
@@ -163,7 +89,8 @@ int main(void)
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
-  MX_USART2_UART_Init();
+  MX_DMA_Init();
+  MX_I2S3_Init();
   /* USER CODE BEGIN 2 */
 
   /* USER CODE END 2 */
@@ -175,23 +102,10 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-	  buff_len=sprintf(uart_buff,"Counter Value =%d \r\n",counter++);
 
-	  UART_Send_IT();
-	  while(Tx_Done==0);
-	  Tx_Done=0;
-	  LL_mDelay(100);
+	  HAL_I2S_Transmit(&hi2s3, data, 7,100);
 
-
-	 // for (int i=0;i<buff_len;i++)
-	 // {
-		//  UART_Send_Char(uart_buff[i]);
-	  //}
-	  //UART_Send_String(uart_buff,buff_len);
-	  //LL_mDelay(10);
-
-
-
+	  HAL_Delay(10);
   }
   /* USER CODE END 3 */
 }
@@ -202,33 +116,43 @@ int main(void)
   */
 void SystemClock_Config(void)
 {
-  LL_FLASH_SetLatency(LL_FLASH_LATENCY_0);
-  while(LL_FLASH_GetLatency()!= LL_FLASH_LATENCY_0)
+  RCC_OscInitTypeDef RCC_OscInitStruct = {0};
+  RCC_ClkInitTypeDef RCC_ClkInitStruct = {0};
+
+  /** Configure the main internal regulator output voltage
+  */
+  __HAL_RCC_PWR_CLK_ENABLE();
+  __HAL_PWR_VOLTAGESCALING_CONFIG(PWR_REGULATOR_VOLTAGE_SCALE1);
+
+  /** Initializes the RCC Oscillators according to the specified parameters
+  * in the RCC_OscInitTypeDef structure.
+  */
+  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSE;
+  RCC_OscInitStruct.HSEState = RCC_HSE_ON;
+  RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
+  RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSE;
+  RCC_OscInitStruct.PLL.PLLM = 4;
+  RCC_OscInitStruct.PLL.PLLN = 168;
+  RCC_OscInitStruct.PLL.PLLP = RCC_PLLP_DIV2;
+  RCC_OscInitStruct.PLL.PLLQ = 4;
+  if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
   {
+    Error_Handler();
   }
-  LL_PWR_SetRegulVoltageScaling(LL_PWR_REGU_VOLTAGE_SCALE3);
-  LL_PWR_DisableOverDriveMode();
-  LL_RCC_HSI_SetCalibTrimming(16);
-  LL_RCC_HSI_Enable();
 
-   /* Wait till HSI is ready */
-  while(LL_RCC_HSI_IsReady() != 1)
+  /** Initializes the CPU, AHB and APB buses clocks
+  */
+  RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK|RCC_CLOCKTYPE_SYSCLK
+                              |RCC_CLOCKTYPE_PCLK1|RCC_CLOCKTYPE_PCLK2;
+  RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
+  RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
+  RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV4;
+  RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV2;
+
+  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_5) != HAL_OK)
   {
-
+    Error_Handler();
   }
-  LL_RCC_SetAHBPrescaler(LL_RCC_SYSCLK_DIV_1);
-  LL_RCC_SetAPB1Prescaler(LL_RCC_APB1_DIV_1);
-  LL_RCC_SetAPB2Prescaler(LL_RCC_APB2_DIV_1);
-  LL_RCC_SetSysClkSource(LL_RCC_SYS_CLKSOURCE_HSI);
-
-   /* Wait till System clock is ready */
-  while(LL_RCC_GetSysClkSource() != LL_RCC_SYS_CLKSOURCE_STATUS_HSI)
-  {
-
-  }
-  LL_Init1msTick(16000000);
-  LL_SetSystemCoreClock(16000000);
-  LL_RCC_SetTIMPrescaler(LL_RCC_TIM_PRESCALER_TWICE);
 }
 
 /* USER CODE BEGIN 4 */
