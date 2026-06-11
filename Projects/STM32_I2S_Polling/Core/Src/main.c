@@ -47,6 +47,8 @@
 /* USER CODE BEGIN PV */
 uint16_t data[7]={0x00,0x0011,0x0022,0x0033,0x0044,0x0055,0x0066};
 
+volatile uint8_t i2sTx_Completed=0;
+
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -57,6 +59,16 @@ void SystemClock_Config(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
+
+void HAL_I2S_TxCpltCallback(I2S_HandleTypeDef *hi2s)
+{
+	if(hi2s->Instance==SPI3)
+	{
+		i2sTx_Completed=1;
+	}
+
+}
+
 
 /* USER CODE END 0 */
 
@@ -103,7 +115,10 @@ int main(void)
 
     /* USER CODE BEGIN 3 */
 
-	  HAL_I2S_Transmit(&hi2s3, data, 7,100);
+	  HAL_I2S_Transmit_DMA(&hi2s3, data, 7);
+
+	  while(i2sTx_Completed==0);
+	  i2sTx_Completed=0;
 
 	  HAL_Delay(10);
   }
