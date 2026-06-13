@@ -18,6 +18,7 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
+#include "dma.h"
 #include "usart.h"
 #include "gpio.h"
 
@@ -114,6 +115,18 @@ void USART2_IRQHandler(void)
 	}
 }
 
+
+void DMA1_Stream6_IRQHandler(void)
+{
+    if (LL_DMA_IsActiveFlag_TC6(DMA1))
+    {
+        LL_DMA_ClearFlag_TC6(DMA1);
+        LL_DMA_DisableStream(DMA1, LL_DMA_STREAM_6);
+
+
+    }
+}
+
 void UART_Send_IT(void)
 {
 	tx_index = 0;
@@ -121,6 +134,30 @@ void UART_Send_IT(void)
 
 	LL_USART_ClearFlag_TC(USART2);
 	LL_USART_EnableIT_TXE(USART2);
+
+}
+
+void UART_Send_DMA(uint8_t * ch, uint16_t len)
+{
+	Tx_Done = 0;
+
+	LL_DMA_DisableStream(DMA1, LL_DMA_STREAM_6);
+
+	LL_DMA_SetPeriphAddress(DMA1, LL_DMA_STREAM_6, LL_USART_DMA_GetRegAddr(USART2));
+
+	LL_DMA_SetMemoryAddress(DMA1, LL_DMA_STREAM_6, (uint32_t)ch);
+
+	LL_DMA_SetDataLength(DMA1, LL_DMA_STREAM_6, len);
+
+    LL_USART_ClearFlag_TC(USART2);
+
+    LL_USART_EnableIT_TC(USART2);
+
+    LL_USART_EnableDMAReq_TX(USART2);
+
+    LL_DMA_EnableIT_TC(DMA1, LL_DMA_STREAM_6);
+
+    LL_DMA_EnableStream(DMA1, LL_DMA_STREAM_6);
 
 }
 
@@ -163,6 +200,7 @@ int main(void)
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
+  MX_DMA_Init();
   MX_USART2_UART_Init();
   /* USER CODE BEGIN 2 */
 
@@ -177,7 +215,9 @@ int main(void)
     /* USER CODE BEGIN 3 */
 	  buff_len=sprintf(uart_buff,"Counter Value =%d \r\n",counter++);
 
-	  UART_Send_IT();
+	  UART_Send_DMA((uint8_t *)uart_buff,buff_len);
+
+	  //UART_Send_IT();
 	  while(Tx_Done==0);
 	  Tx_Done=0;
 	  LL_mDelay(100);
