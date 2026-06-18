@@ -45,6 +45,17 @@
 /* Private variables ---------------------------------------------------------*/
 
 /* USER CODE BEGIN PV */
+
+#define RXBuffSize 100
+
+char uart_buff_rx[RXBuffSize];
+uint16_t rx_index;
+
+uint16_t ReceivedLen;
+
+uint8_t rxDone=0;
+
+
 char uart_buff[50]={0};
 uint8_t counter;
 
@@ -112,6 +123,24 @@ void USART2_IRQHandler(void)
 	        LL_USART_ClearFlag_TC(USART2);
 	        LL_USART_DisableIT_TC(USART2);
 	        Tx_Done = 1;
+	}
+
+	// RXNE interrupt
+	if (LL_USART_IsActiveFlag_RXNE(USART2))
+	{
+		uart_buff_rx[rx_index++] = LL_USART_ReceiveData8(USART2);
+		if(rx_index==RXBuffSize)
+		{
+			rx_index=0;
+		}
+	}
+
+	if(LL_USART_IsActiveFlag_IDLE(USART2))
+	{
+		LL_USART_ClearFlag_IDLE(USART2);
+		ReceivedLen=rx_index;
+		rx_index=0;
+		rxDone=1;
 	}
 }
 
@@ -203,7 +232,8 @@ int main(void)
   MX_DMA_Init();
   MX_USART2_UART_Init();
   /* USER CODE BEGIN 2 */
-
+  LL_USART_EnableIT_RXNE(USART2);
+  LL_USART_EnableIT_IDLE(USART2);
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -213,14 +243,25 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-	  buff_len=sprintf(uart_buff,"Counter Value =%d \r\n",counter++);
+//	  buff_len=sprintf(uart_buff,"Counter Value =%d \r\n",counter++);
+//
+//	  UART_Send_DMA((uint8_t *)uart_buff,buff_len);
+//
+//	  //UART_Send_IT();
+//	  while(Tx_Done==0);
+//	  Tx_Done=0;
+//	  LL_mDelay(100);
 
-	  UART_Send_DMA((uint8_t *)uart_buff,buff_len);
+	  if(rxDone==1)
+	  {
+		  for (int i=0;i<ReceivedLen;i++)
+		  {
+			  UART_Send_Char(uart_buff_rx[i]);
+		  }
+		  rxDone=0;
 
-	  //UART_Send_IT();
-	  while(Tx_Done==0);
-	  Tx_Done=0;
-	  LL_mDelay(100);
+
+	  }
 
 
 	 // for (int i=0;i<buff_len;i++)
