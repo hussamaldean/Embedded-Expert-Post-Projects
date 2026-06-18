@@ -134,7 +134,7 @@ void USART2_IRQHandler(void)
 			rx_index=0;
 		}
 	}
-
+	// IDLE line interrupt
 	if(LL_USART_IsActiveFlag_IDLE(USART2))
 	{
 		LL_USART_ClearFlag_IDLE(USART2);
@@ -259,8 +259,6 @@ int main(void)
 			  UART_Send_Char(uart_buff_rx[i]);
 		  }
 		  rxDone=0;
-
-
 	  }
 
 
