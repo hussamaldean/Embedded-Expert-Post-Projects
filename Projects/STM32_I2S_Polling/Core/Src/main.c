@@ -19,12 +19,14 @@
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
 #include "dma.h"
+#include "i2c.h"
 #include "i2s.h"
 #include "gpio.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-
+#include "math.h"
+#include "CS43L22.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -34,6 +36,20 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
+//#define dataSize 100
+//
+#define F_SAMPLE	96000.0f
+#define F_OUT		4000.0f
+#define PI 			3.14159f
+
+#define SAMPLES_PER_CYCLE	(F_SAMPLE / F_OUT)  // 24.0
+#define NUM_CYCLES			10
+#define BUFFER_SIZE			((int)(SAMPLES_PER_CYCLE * NUM_CYCLES) * 2)  // *2 for stereo
+
+uint16_t dataI2S[BUFFER_SIZE];  // 480 elements for 10 cycles
+
+float phase_increment = 2.0f * PI / SAMPLES_PER_CYCLE;
+float current_phase = 0.0f;
 
 /* USER CODE END PD */
 
@@ -45,10 +61,12 @@
 /* Private variables ---------------------------------------------------------*/
 
 /* USER CODE BEGIN PV */
-uint16_t data[7]={0x00,0x0011,0x0022,0x0033,0x0044,0x0055,0x0066};
 
-volatile uint8_t i2sTx_Completed=0;
-
+//uint16_t dataI2S[dataSize];
+//float mySinVal;
+//float sample_dt;
+//uint16_t sample_N;
+//uint16_t i_t;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -64,7 +82,8 @@ void HAL_I2S_TxCpltCallback(I2S_HandleTypeDef *hi2s)
 {
 	if(hi2s->Instance==SPI3)
 	{
-		i2sTx_Completed=1;
+		/*For debugging using oscilloscope*/
+		HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_0);
 	}
 
 }
@@ -103,7 +122,39 @@ int main(void)
   MX_GPIO_Init();
   MX_DMA_Init();
   MX_I2S3_Init();
+  MX_I2C1_Init();
   /* USER CODE BEGIN 2 */
+	CS43_Init(CS43L22_MODE_I2S);
+	CS43_SetVolume(100);
+	CS43_Enable_RightLeft(CS43_RIGHT_LEFT);
+	CS43_Start();
+
+
+
+	float phase_increment = 2.0f * PI / SAMPLES_PER_CYCLE;
+	float current_phase = 0.0f;
+
+	for(uint16_t i=0; i<BUFFER_SIZE/2; i++)  // 240 stereo pairs
+	{
+	    float mySinVal = sinf(current_phase);
+
+	    // Scale to 16-bit signed range
+	    int16_t right_value = (int16_t)(mySinVal * 32000.0f);
+	    int16_t left_value = -right_value;  // Inverted signal
+
+	    dataI2S[i*2] = right_value;      // Right channel
+	    dataI2S[i*2 + 1] = left_value;   // Left channel (inverted)
+
+	    current_phase += phase_increment;
+
+	    // Keep phase in 0 to 2*PI range to prevent floating point drift
+	    if(current_phase >= 2.0f * PI) {
+	        current_phase -= 2.0f * PI;
+	    }
+	}
+
+	HAL_I2S_Transmit_DMA(&hi2s3, dataI2S, BUFFER_SIZE);
+
 
   /* USER CODE END 2 */
 
@@ -114,14 +165,21 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-
-	  HAL_I2S_Transmit_DMA(&hi2s3, data, 7);
-
-	  while(i2sTx_Completed==0);
-	  i2sTx_Completed=0;
-
+	  //tempData[0]=0xFFFF;
+	  //tempData[1]=0xBEEF;
+	  //tempData[2]=0xDEAD;
+	  //HAL_I2S_Transmit(&hi2s3, tempData, 3,10);
 	  HAL_Delay(10);
+//	  for (int i=0;i<65535;i++)
+//	  {
+//
+//		  HAL_I2S_Transmit(&hi2s3, tempData, 2,10);
+//		  HAL_Delay(1);
+//	  }
+
+	  //HAL_I2S_Transmit(&hi2s3, dataI2S, sample_N, 1000);
   }
+
   /* USER CODE END 3 */
 }
 
