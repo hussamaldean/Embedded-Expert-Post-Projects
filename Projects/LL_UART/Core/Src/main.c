@@ -228,7 +228,8 @@ void UART_Send_DMA(uint8_t * ch, uint16_t len)
 }
 
 /* Start UART DMA IDLE reception */
-void UART_Receive_DMA_IDLE(uint8_t *ch, uint16_t len) {
+void UART_Receive_DMA_IDLE(uint8_t *ch, uint16_t len)
+{
 	rxDone = 0;
 	ReceivedLen = 0;
 	iDMARX=1;
