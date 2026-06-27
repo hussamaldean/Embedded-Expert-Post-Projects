@@ -56,6 +56,7 @@ uint16_t ReceivedLen;
 uint8_t rxDone=0;
 
 
+
 char uart_buff[50]={0};
 uint8_t counter;
 
@@ -65,6 +66,9 @@ uint16_t buff_len;
 uint16_t tx_index;
 
 uint8_t Tx_Done;
+
+
+uint8_t iDMARX=0;
 
 /* USER CODE END PV */
 
@@ -138,10 +142,31 @@ void USART2_IRQHandler(void)
 	if(LL_USART_IsActiveFlag_IDLE(USART2))
 	{
 		LL_USART_ClearFlag_IDLE(USART2);
-		ReceivedLen=rx_index;
-		rx_index=0;
-		rxDone=1;
+		if(iDMARX==0)
+		{
+			ReceivedLen=rx_index;
+			rx_index=0;
+			rxDone=1;
+		}
+
+		if(iDMARX==1)
+		{
+			/* Calculate bytes received */
+			ReceivedLen=RXBuffSize-LL_DMA_GetDataLength(DMA1, LL_DMA_STREAM_5);
+
+			/*Clear IDLE flag*/
+			LL_USART_ClearFlag_IDLE(USART2);
+
+			/* Stop DMA to preserve received data */
+			LL_DMA_DisableStream(DMA1, LL_DMA_STREAM_5);
+
+	        /* Clear any pending DMA flags */
+	        LL_DMA_ClearFlag_TC5(DMA1);
+
+	        rxDone = 1;
+		}
 	}
+
 }
 
 
@@ -154,6 +179,18 @@ void DMA1_Stream6_IRQHandler(void)
 
 
     }
+}
+
+void DMA1_Stream5_IRQHandler(void)
+{
+	if (LL_DMA_IsActiveFlag_TC5(DMA1))
+	{
+		LL_DMA_ClearFlag_TC5(DMA1);
+		LL_DMA_DisableStream(DMA1, LL_DMA_STREAM_5);
+		ReceivedLen=RXBuffSize;
+
+
+	}
 }
 
 void UART_Send_IT(void)
@@ -189,6 +226,35 @@ void UART_Send_DMA(uint8_t * ch, uint16_t len)
     LL_DMA_EnableStream(DMA1, LL_DMA_STREAM_6);
 
 }
+
+/* Start UART DMA IDLE reception */
+void UART_Receive_DMA_IDLE(uint8_t *ch, uint16_t len) {
+	rxDone = 0;
+	ReceivedLen = 0;
+	iDMARX=1;
+
+    LL_DMA_DisableStream(DMA1, LL_DMA_STREAM_5);
+
+    LL_DMA_ClearFlag_TC5(DMA1);
+    LL_DMA_ClearFlag_HT5(DMA1);
+    LL_DMA_ClearFlag_TE5(DMA1);
+
+    LL_DMA_EnableIT_TC(DMA1, LL_DMA_STREAM_5);   // Enable Transfer Complete Interrupt
+
+    LL_USART_ClearFlag_IDLE(USART2);
+
+    LL_USART_EnableIT_IDLE(USART2);
+
+    LL_USART_EnableDMAReq_RX(USART2);  // Enable USART RX via DMA
+
+    LL_DMA_SetMemoryAddress(DMA1, LL_DMA_STREAM_5, (uint32_t)ch);
+    LL_DMA_SetPeriphAddress(DMA1, LL_DMA_STREAM_5, LL_USART_DMA_GetRegAddr(USART2));
+    LL_DMA_SetDataLength(DMA1, LL_DMA_STREAM_5, len);
+
+    LL_DMA_EnableStream(DMA1, LL_DMA_STREAM_5);
+}
+
+
 
 
 /* USER CODE END 0 */
@@ -232,8 +298,7 @@ int main(void)
   MX_DMA_Init();
   MX_USART2_UART_Init();
   /* USER CODE BEGIN 2 */
-  LL_USART_EnableIT_RXNE(USART2);
-  LL_USART_EnableIT_IDLE(USART2);
+
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -243,32 +308,15 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-//	  buff_len=sprintf(uart_buff,"Counter Value =%d \r\n",counter++);
-//
-//	  UART_Send_DMA((uint8_t *)uart_buff,buff_len);
-//
-//	  //UART_Send_IT();
-//	  while(Tx_Done==0);
-//	  Tx_Done=0;
-//	  LL_mDelay(100);
+	 if(rxDone==0)
+	 {
+		UART_Receive_DMA_IDLE((uint8_t*)uart_buff_rx,RXBuffSize);
 
-	  if(rxDone==1)
-	  {
-		  for (int i=0;i<ReceivedLen;i++)
-		  {
-			  UART_Send_Char(uart_buff_rx[i]);
-		  }
-		  rxDone=0;
-	  }
+		while(rxDone==0);
+		rxDone=0;
+		UART_Send_String(uart_buff_rx,ReceivedLen);
 
-
-	 // for (int i=0;i<buff_len;i++)
-	 // {
-		//  UART_Send_Char(uart_buff[i]);
-	  //}
-	  //UART_Send_String(uart_buff,buff_len);
-	  //LL_mDelay(10);
-
+	 }
 
 
   }
