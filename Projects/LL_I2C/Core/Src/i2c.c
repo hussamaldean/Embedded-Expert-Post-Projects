@@ -132,5 +132,67 @@ uint8_t I2C_Scan(I2C_TypeDef *I2Cx)
 
 }
 
+
+void I2C_Mem_Read(I2C_TypeDef *I2Cx,uint8_t slaveAddress, uint16_t regAddress, uint8_t regLen, uint8_t *data, uint16_t length)
+{
+    // Write phase: Send register address
+    LL_I2C_GenerateStartCondition(I2Cx);
+
+    while(!LL_I2C_IsActiveFlag_SB(I2Cx));
+
+    LL_I2C_TransmitData8(I2Cx, (slaveAddress) | 0x00);
+
+    while(!LL_I2C_IsActiveFlag_ADDR(I2Cx));
+
+    LL_I2C_ClearFlag_ADDR(I2Cx);
+
+    if (regLen == 1)
+    {
+        LL_I2C_TransmitData8(I2Cx, regAddress & 0xFF);
+        while(!LL_I2C_IsActiveFlag_TXE(I2Cx));
+    }
+
+    else if (regLen == 2)
+    {
+        // Send regAddress high byte
+        LL_I2C_TransmitData8(I2Cx, (uint8_t)(regAddress >> 8));
+        while(!LL_I2C_IsActiveFlag_TXE(I2Cx));
+
+        // Send regAddress low byte
+        LL_I2C_TransmitData8(I2Cx, (uint8_t)(regAddress & 0xFF));
+        while(!LL_I2C_IsActiveFlag_TXE(I2Cx));
+    }
+
+
+    // Read phase: Get data bytes
+    LL_I2C_GenerateStartCondition(I2Cx);
+
+    while(!LL_I2C_IsActiveFlag_SB(I2Cx));
+
+    LL_I2C_TransmitData8(I2Cx, (slaveAddress) | 0x01);
+
+    while(!LL_I2C_IsActiveFlag_ADDR(I2Cx));
+
+    LL_I2C_AcknowledgeNextData(I2Cx, LL_I2C_ACK);
+
+    LL_I2C_ClearFlag_ADDR(I2Cx);
+
+
+    // Read all bytes
+    for(uint16_t i = 0; i < length; i++)
+    {
+        if(i == length - 1)
+        {
+            LL_I2C_AcknowledgeNextData(I2Cx, LL_I2C_NACK);  // If last byte, Send NACK
+        }
+
+        while(!LL_I2C_IsActiveFlag_RXNE(I2Cx));
+
+        data[i] = LL_I2C_ReceiveData8(I2Cx);
+    }
+
+    LL_I2C_GenerateStopCondition(I2Cx);
+}
+
 /* USER CODE END 1 */
 

@@ -24,7 +24,13 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+
+#define ds3231_addr 0x68<<1
+
 uint8_t NumOfDevices;
+
+uint8_t RTCData[3]={0};
+
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -66,6 +72,11 @@ int __io_putchar(int ch)
 	LL_USART_TransmitData8(USART2, (char)ch);
 
 	return ch;
+}
+
+
+uint8_t bcdToDec(uint8_t bcd) {
+    return (bcd & 0x0F) + ((bcd >> 4) * 10);
 }
 /* USER CODE END 0 */
 
@@ -119,7 +130,15 @@ int main(void)
 
     /* USER CODE BEGIN 3 */
 
-	  NumOfDevices=I2C_Scan(I2C1);
+	 // NumOfDevices=I2C_Scan(I2C1);
+
+	  I2C_Mem_Read(I2C1,ds3231_addr,0x00,1,RTCData,3);
+
+	  printf("DS3231 register values:\r\n");
+
+	  printf("Seconds=%d\r\n",bcdToDec(RTCData[0]));
+	  printf("Minutes=%d\r\n",bcdToDec(RTCData[1]));
+	  printf("Hours=%d\r\n",bcdToDec(RTCData[2]));
 
 	  for (volatile int32_t i=0;i<1000000;i++)
 	  {
