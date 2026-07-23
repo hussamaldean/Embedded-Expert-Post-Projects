@@ -194,5 +194,47 @@ void I2C_Mem_Read(I2C_TypeDef *I2Cx,uint8_t slaveAddress, uint16_t regAddress, u
     LL_I2C_GenerateStopCondition(I2Cx);
 }
 
+
+void I2C_Mem_Write(I2C_TypeDef *I2Cx,uint8_t slaveAddress, uint16_t regAddress,uint8_t regLen, uint8_t *data, uint16_t length)
+{
+    // Generate START condition
+    LL_I2C_GenerateStartCondition(I2Cx);
+    while(!LL_I2C_IsActiveFlag_SB(I2Cx));
+
+    // Send device address with write bit
+    LL_I2C_TransmitData8(I2Cx, (slaveAddress ) | 0x00);
+    while(!LL_I2C_IsActiveFlag_ADDR(I2Cx));
+    LL_I2C_ClearFlag_ADDR(I2Cx);
+
+    if (regLen == 1)
+      {
+          LL_I2C_TransmitData8(I2Cx, regAddress & 0xFF);
+          while(!LL_I2C_IsActiveFlag_TXE(I2Cx));
+      }
+
+      else if (regLen == 2)
+      {
+          // Send regAddress high byte
+          LL_I2C_TransmitData8(I2Cx, (uint8_t)(regAddress >> 8));
+          while(!LL_I2C_IsActiveFlag_TXE(I2Cx));
+
+          // Send regAddress low byte
+          LL_I2C_TransmitData8(I2Cx, (uint8_t)(regAddress & 0xFF));
+          while(!LL_I2C_IsActiveFlag_TXE(I2Cx));
+      }
+
+    // Send all data bytes
+    for(uint16_t i = 0; i < length; i++)
+    {
+        LL_I2C_TransmitData8(I2Cx, data[i]);
+        while(!LL_I2C_IsActiveFlag_TXE(I2Cx));
+    }
+
+    // Generate STOP condition
+    LL_I2C_GenerateStopCondition(I2Cx);
+
+
+}
+
 /* USER CODE END 1 */
 

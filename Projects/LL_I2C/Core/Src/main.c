@@ -25,11 +25,16 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 
+#include "stdlib.h"
+
+
 #define ds3231_addr 0x68<<1
 
 uint8_t NumOfDevices;
 
 uint8_t RTCData[3]={0};
+
+uint8_t RTCDataWrite[3]={0};
 
 /* USER CODE END Includes */
 
@@ -78,6 +83,15 @@ int __io_putchar(int ch)
 uint8_t bcdToDec(uint8_t bcd) {
     return (bcd & 0x0F) + ((bcd >> 4) * 10);
 }
+
+uint8_t DEC_to_BCD(uint8_t dec)
+{
+    // Dividing by 10 shifts the tens digit to the lower nibble.
+    // Modulo 10 isolates the ones digit.
+    return (uint8_t)((dec / 10) << 4) | (dec % 10);
+}
+
+
 /* USER CODE END 0 */
 
 /**
@@ -132,7 +146,20 @@ int main(void)
 
 	 // NumOfDevices=I2C_Scan(I2C1);
 
+
+
 	  I2C_Mem_Read(I2C1,ds3231_addr,0x00,1,RTCData,3);
+
+	  if((bcdToDec(RTCData[0]) % 5) == 0)
+	  {
+		  RTCDataWrite[0]=DEC_to_BCD(1);
+		  RTCDataWrite[1]=DEC_to_BCD(random()%10);
+		  RTCDataWrite[2]=DEC_to_BCD(random()%10);
+		  printf("New value set\r\n");
+
+		  I2C_Mem_Write(I2C1,ds3231_addr,0x00,1,RTCDataWrite,3);
+
+	  }
 
 	  printf("DS3231 register values:\r\n");
 
