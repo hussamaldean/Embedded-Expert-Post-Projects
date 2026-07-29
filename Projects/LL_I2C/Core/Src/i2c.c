@@ -294,7 +294,7 @@ void I2C_Mem_Write_DMA(I2C_TypeDef *I2Cx,
     LL_DMA_ClearFlag_FE1  	(I2C_DMA_INSTANCE);
     LL_DMA_ClearFlag_DME1 	(I2C_DMA_INSTANCE);
 
-    /* Update Memory Address and Data Length for the new payload */
+    /* Update Memory Address, peripheral address and Data Length for the new payload */
     LL_DMA_SetMemoryAddress(I2C_DMA_INSTANCE, I2C_DMA_STREAM, (uint32_t)data);
     LL_DMA_SetPeriphAddress(I2C_DMA_INSTANCE, I2C_DMA_STREAM,  (uint32_t)&I2Cx->DR);
     LL_DMA_SetDataLength   (I2C_DMA_INSTANCE, I2C_DMA_STREAM, length);

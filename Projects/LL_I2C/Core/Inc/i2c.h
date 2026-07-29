@@ -44,12 +44,8 @@ uint8_t I2C_Scan(I2C_TypeDef *I2Cx);
 void I2C_Mem_Read(I2C_TypeDef *I2Cx,uint8_t slaveAddress, uint16_t regAddress, uint8_t regLen, uint8_t *data, uint16_t length);
 void I2C_Mem_Write(I2C_TypeDef *I2Cx,uint8_t slaveAddress, uint16_t regAddress,uint8_t regLen, uint8_t *data, uint16_t length);
 
-void I2C_Mem_Write_DMA(I2C_TypeDef *I2Cx,
-        uint8_t  slaveAddress,
-        uint16_t regAddress,
-        uint8_t  regLen,
-        uint8_t *data,
-        uint16_t length);
+void I2C_Mem_Write_DMA(I2C_TypeDef *I2Cx,uint8_t  slaveAddress,uint16_t regAddress,uint8_t  regLen,uint8_t *data,uint16_t length);
+
 /* USER CODE END Prototypes */
 
 #ifdef __cplusplus

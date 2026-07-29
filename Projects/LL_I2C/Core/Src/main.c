@@ -149,10 +149,10 @@ int main(void)
 
 
 
-	 // I2C_Mem_Read(I2C1,ds3231_addr,0x00,1,RTCData,3);
+	  I2C_Mem_Read(I2C1,ds3231_addr,0x00,1,RTCData,3);
 
-	 // if((bcdToDec(RTCData[0]) % 5) == 0)
-	 // {
+	  if((bcdToDec(RTCData[0]) % 5) == 0)
+	  {
 		  RTCDataWrite[0]=DEC_to_BCD(1);
 		  RTCDataWrite[1]=DEC_to_BCD(random()%10);
 		  RTCDataWrite[2]=DEC_to_BCD(random()%10);
@@ -163,18 +163,18 @@ int main(void)
 		  while(I2C_Tx_Completed==0);
 		  I2C_Tx_Completed=0;
 
-	 // }
+	  }
 
-	  //printf("DS3231 register values:\r\n");
+	  printf("DS3231 register values:\r\n");
 
-	  //printf("Seconds=%d\r\n",bcdToDec(RTCData[0]));
-	  //printf("Minutes=%d\r\n",bcdToDec(RTCData[1]));
-	  //printf("Hours=%d\r\n",bcdToDec(RTCData[2]));
+	  printf("Seconds=%d\r\n",bcdToDec(RTCData[0]));
+	  printf("Minutes=%d\r\n",bcdToDec(RTCData[1]));
+	  printf("Hours=%d\r\n",bcdToDec(RTCData[2]));
 
-	  //for (volatile int32_t i=0;i<1000000;i++)
-	 // {
+	  for (volatile int32_t i=0;i<1000000;i++)
+	  {
 		  //DO Nothing
-	  //}
+	  }
 
   }
   /* USER CODE END 3 */
