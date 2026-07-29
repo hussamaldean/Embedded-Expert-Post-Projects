@@ -18,6 +18,7 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
+#include "dma.h"
 #include "i2c.h"
 #include "usart.h"
 #include "gpio.h"
@@ -35,6 +36,8 @@ uint8_t NumOfDevices;
 uint8_t RTCData[3]={0};
 
 uint8_t RTCDataWrite[3]={0};
+
+volatile uint8_t I2C_Tx_Completed=0;
 
 /* USER CODE END Includes */
 
@@ -91,6 +94,10 @@ uint8_t DEC_to_BCD(uint8_t dec)
     return (uint8_t)((dec / 10) << 4) | (dec % 10);
 }
 
+void I2C1_DMA_Tx_Completed(void)
+{
+	I2C_Tx_Completed=1;
+}
 
 /* USER CODE END 0 */
 
@@ -108,14 +115,7 @@ int main(void)
   /* MCU Configuration--------------------------------------------------------*/
 
   /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
-  LL_APB2_GRP1_EnableClock(LL_APB2_GRP1_PERIPH_SYSCFG);
-  LL_APB1_GRP1_EnableClock(LL_APB1_GRP1_PERIPH_PWR);
-
-  /* System interrupt init*/
-  NVIC_SetPriorityGrouping(NVIC_PRIORITYGROUP_4);
-
-  /* SysTick_IRQn interrupt configuration */
-  NVIC_SetPriority(SysTick_IRQn, NVIC_EncodePriority(NVIC_GetPriorityGrouping(),15, 0));
+  HAL_Init();
 
   /* USER CODE BEGIN Init */
 
@@ -130,6 +130,7 @@ int main(void)
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
+  MX_DMA_Init();
   MX_I2C1_Init();
   MX_USART2_UART_Init();
   /* USER CODE BEGIN 2 */
@@ -148,29 +149,32 @@ int main(void)
 
 
 
-	  I2C_Mem_Read(I2C1,ds3231_addr,0x00,1,RTCData,3);
+	 // I2C_Mem_Read(I2C1,ds3231_addr,0x00,1,RTCData,3);
 
-	  if((bcdToDec(RTCData[0]) % 5) == 0)
-	  {
+	 // if((bcdToDec(RTCData[0]) % 5) == 0)
+	 // {
 		  RTCDataWrite[0]=DEC_to_BCD(1);
 		  RTCDataWrite[1]=DEC_to_BCD(random()%10);
 		  RTCDataWrite[2]=DEC_to_BCD(random()%10);
 		  printf("New value set\r\n");
 
-		  I2C_Mem_Write(I2C1,ds3231_addr,0x00,1,RTCDataWrite,3);
+		  //I2C_Mem_Write(I2C1,ds3231_addr,0x00,1,RTCDataWrite,3);
+		  I2C_Mem_Write_DMA(I2C1,ds3231_addr,0x00,1,RTCDataWrite,3);
+		  while(I2C_Tx_Completed==0);
+		  I2C_Tx_Completed=0;
 
-	  }
+	 // }
 
-	  printf("DS3231 register values:\r\n");
+	  //printf("DS3231 register values:\r\n");
 
-	  printf("Seconds=%d\r\n",bcdToDec(RTCData[0]));
-	  printf("Minutes=%d\r\n",bcdToDec(RTCData[1]));
-	  printf("Hours=%d\r\n",bcdToDec(RTCData[2]));
+	  //printf("Seconds=%d\r\n",bcdToDec(RTCData[0]));
+	  //printf("Minutes=%d\r\n",bcdToDec(RTCData[1]));
+	  //printf("Hours=%d\r\n",bcdToDec(RTCData[2]));
 
-	  for (volatile int32_t i=0;i<1000000;i++)
-	  {
+	  //for (volatile int32_t i=0;i<1000000;i++)
+	 // {
 		  //DO Nothing
-	  }
+	  //}
 
   }
   /* USER CODE END 3 */
@@ -205,8 +209,13 @@ void SystemClock_Config(void)
   {
 
   }
-  LL_Init1msTick(16000000);
   LL_SetSystemCoreClock(16000000);
+
+   /* Update the time base */
+  if (HAL_InitTick (TICK_INT_PRIORITY) != HAL_OK)
+  {
+    Error_Handler();
+  }
   LL_RCC_SetTIMPrescaler(LL_RCC_TIM_PRESCALER_TWICE);
 }
 
