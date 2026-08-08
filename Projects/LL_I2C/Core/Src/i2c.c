@@ -403,7 +403,7 @@ void I2C_Mem_Read_DMA(I2C_TypeDef *I2Cx, uint8_t slaveAddress, uint16_t regAddre
     LL_DMA_EnableIT_TC(I2C_DMA_INSTANCE, I2C_DMA_SREAM_RX);
 
     /* ---- 2. Write phase: Send register address (Polling) ---- */
-    // Note: Removed printfs to prevent I2C timeouts
+
 
     LL_I2C_GenerateStartCondition(I2Cx);
     while(!LL_I2C_IsActiveFlag_SB(I2Cx));
