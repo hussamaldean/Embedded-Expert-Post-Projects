@@ -150,12 +150,27 @@ int main(void)
 
 
 
-	  I2C_Mem_Read_DMA(I2C1,MPu9250_Addr,0x00,1,RTCData,3);
+	  I2C_Mem_Read_DMA(I2C1,ds3231_addr,0x00,1,RTCData,3);
 
 
 
 	  while(I2C_Rx_Completed==0);
 	  I2C_Rx_Completed=0;
+
+	  if((bcdToDec(RTCData[0]) % 5) == 0)
+	  {
+
+		  RTCDataWrite[0]=DEC_to_BCD(1);
+		  RTCDataWrite[1]=DEC_to_BCD(random()%10);
+		  RTCDataWrite[2]=DEC_to_BCD(random()%10);
+		  printf("New value set\r\n");
+
+		  I2C_Mem_Write_DMA(I2C1,ds3231_addr,0x00,1,RTCDataWrite,3);
+		  while(I2C_Tx_Completed==0);
+		  I2C_Tx_Completed=0;
+
+
+	  }
 
 	  printf("DS3231 register values:\r\n");
 
