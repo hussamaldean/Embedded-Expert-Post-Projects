@@ -19,12 +19,18 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "i2c.h"
-#include "dma.h"
 
 /* USER CODE BEGIN 0 */
 
-#define I2C_DMA_INSTANCE  DMA1
-#define I2C_DMA_STREAM    LL_DMA_STREAM_1
+#include "stdio.h"
+
+#define I2C_DMA_INSTANCE  		DMA1
+
+#define I2C_DMA_STREAM_TX    	LL_DMA_STREAM_1
+
+#define I2C_DMA_SREAM_RX		LL_DMA_STREAM_0
+
+
 
 /* Context to share the I2C instance with the ISR */
 static volatile uint8_t I2C_DMA_Busy = 0;
@@ -81,6 +87,25 @@ void MX_I2C1_Init(void)
   LL_DMA_SetMemorySize(DMA1, LL_DMA_STREAM_1, LL_DMA_MDATAALIGN_BYTE);
 
   LL_DMA_DisableFifoMode(DMA1, LL_DMA_STREAM_1);
+
+  /* I2C1_RX Init */
+  LL_DMA_SetChannelSelection(DMA1, LL_DMA_STREAM_0, LL_DMA_CHANNEL_1);
+
+  LL_DMA_SetDataTransferDirection(DMA1, LL_DMA_STREAM_0, LL_DMA_DIRECTION_PERIPH_TO_MEMORY);
+
+  LL_DMA_SetStreamPriorityLevel(DMA1, LL_DMA_STREAM_0, LL_DMA_PRIORITY_LOW);
+
+  LL_DMA_SetMode(DMA1, LL_DMA_STREAM_0, LL_DMA_MODE_NORMAL);
+
+  LL_DMA_SetPeriphIncMode(DMA1, LL_DMA_STREAM_0, LL_DMA_PERIPH_NOINCREMENT);
+
+  LL_DMA_SetMemoryIncMode(DMA1, LL_DMA_STREAM_0, LL_DMA_MEMORY_INCREMENT);
+
+  LL_DMA_SetPeriphSize(DMA1, LL_DMA_STREAM_0, LL_DMA_PDATAALIGN_BYTE);
+
+  LL_DMA_SetMemorySize(DMA1, LL_DMA_STREAM_0, LL_DMA_MDATAALIGN_BYTE);
+
+  LL_DMA_DisableFifoMode(DMA1, LL_DMA_STREAM_0);
 
   /* USER CODE BEGIN I2C1_Init 1 */
 
@@ -284,8 +309,8 @@ void I2C_Mem_Write_DMA(I2C_TypeDef *I2Cx,
     Active_I2Cx = I2Cx;
 
     /* ---- 2. Prepare DMA1 Stream 1 ---- */
-    LL_DMA_DisableStream(I2C_DMA_INSTANCE, I2C_DMA_STREAM);
-    while (LL_DMA_IsEnabledStream(I2C_DMA_INSTANCE, I2C_DMA_STREAM)) { /* wait */ }
+    LL_DMA_DisableStream(I2C_DMA_INSTANCE, I2C_DMA_STREAM_TX);
+    while (LL_DMA_IsEnabledStream(I2C_DMA_INSTANCE, I2C_DMA_STREAM_TX)) { /* wait */ }
 
     /* Clear pending DMA flags */
     LL_DMA_ClearFlag_TC1	(I2C_DMA_INSTANCE) ;
@@ -295,12 +320,12 @@ void I2C_Mem_Write_DMA(I2C_TypeDef *I2Cx,
     LL_DMA_ClearFlag_DME1 	(I2C_DMA_INSTANCE);
 
     /* Update Memory Address, peripheral address and Data Length for the new payload */
-    LL_DMA_SetMemoryAddress(I2C_DMA_INSTANCE, I2C_DMA_STREAM, (uint32_t)data);
-    LL_DMA_SetPeriphAddress(I2C_DMA_INSTANCE, I2C_DMA_STREAM,  (uint32_t)&I2Cx->DR);
-    LL_DMA_SetDataLength   (I2C_DMA_INSTANCE, I2C_DMA_STREAM, length);
+    LL_DMA_SetMemoryAddress(I2C_DMA_INSTANCE, I2C_DMA_STREAM_TX, (uint32_t)data);
+    LL_DMA_SetPeriphAddress(I2C_DMA_INSTANCE, I2C_DMA_STREAM_TX,  (uint32_t)&I2Cx->DR);
+    LL_DMA_SetDataLength   (I2C_DMA_INSTANCE, I2C_DMA_STREAM_TX, length);
 
     /* Enable DMA Transfer Complete Interrupt */
-    LL_DMA_EnableIT_TC(I2C_DMA_INSTANCE, I2C_DMA_STREAM);
+    LL_DMA_EnableIT_TC(I2C_DMA_INSTANCE, I2C_DMA_STREAM_TX);
 
     /* ---- 3. Manual I2C sequence: START + Slave Address + Register Address ---- */
     LL_I2C_GenerateStartCondition(I2Cx);
@@ -332,7 +357,7 @@ void I2C_Mem_Write_DMA(I2C_TypeDef *I2Cx,
 
     /* ---- 4. Arm DMA & I2C DMA Request ---- */
     LL_I2C_EnableDMAReq_TX(I2Cx);
-    LL_DMA_EnableStream(I2C_DMA_INSTANCE, I2C_DMA_STREAM);
+    LL_DMA_EnableStream(I2C_DMA_INSTANCE, I2C_DMA_STREAM_TX);
 
     /* Function returns immediately. DMA pushes the payload in the background. */
 }
@@ -340,6 +365,129 @@ void I2C_Mem_Write_DMA(I2C_TypeDef *I2Cx,
 __weak void I2C1_DMA_Tx_Completed(void)
 {
 
+}
+
+
+
+void I2C_Mem_Read_DMA(I2C_TypeDef *I2Cx, uint8_t slaveAddress, uint16_t regAddress, uint8_t regLen, uint8_t *data, uint16_t length)
+{
+    if (length == 0) return;
+    if ((regLen != 1) && (regLen != 2)) return;
+    if (I2C_DMA_Busy) return; /* Prevent overlapping transfers */
+
+    I2C_DMA_Busy = 1;
+
+    /* Save I2C context for the Interrupt Handler */
+    Active_I2Cx = I2Cx;
+
+    /* ---- 1. Prepare DMA1 Stream 0 ---- */
+    LL_DMA_DisableStream(I2C_DMA_INSTANCE, I2C_DMA_SREAM_RX);
+    while (LL_DMA_IsEnabledStream(I2C_DMA_INSTANCE, I2C_DMA_SREAM_RX)) { /* wait */ }
+
+    /* Clear pending DMA flags */
+    LL_DMA_ClearFlag_TC0(I2C_DMA_INSTANCE);
+    LL_DMA_ClearFlag_HT0(I2C_DMA_INSTANCE);
+    LL_DMA_ClearFlag_TE0(I2C_DMA_INSTANCE);
+    LL_DMA_ClearFlag_FE0(I2C_DMA_INSTANCE);
+    LL_DMA_ClearFlag_DME0(I2C_DMA_INSTANCE);
+
+
+
+
+    /* Update Memory Address, peripheral address and Data Length for the new payload */
+    LL_DMA_SetMemoryAddress(I2C_DMA_INSTANCE, I2C_DMA_SREAM_RX, (uint32_t)data);
+    LL_DMA_SetPeriphAddress(I2C_DMA_INSTANCE, I2C_DMA_SREAM_RX, (uint32_t)&I2Cx->DR);
+    LL_DMA_SetDataLength(I2C_DMA_INSTANCE, I2C_DMA_SREAM_RX, length);
+
+    /* Enable DMA Transfer Complete Interrupt */
+    LL_DMA_EnableIT_TC(I2C_DMA_INSTANCE, I2C_DMA_SREAM_RX);
+
+    /* ---- 2. Write phase: Send register address (Polling) ---- */
+    // Note: Removed printfs to prevent I2C timeouts
+
+    LL_I2C_GenerateStartCondition(I2Cx);
+    while(!LL_I2C_IsActiveFlag_SB(I2Cx));
+
+    LL_I2C_TransmitData8(I2Cx, (slaveAddress & 0xFE)); // Ensure Write bit (0)
+    while(!LL_I2C_IsActiveFlag_ADDR(I2Cx));
+    LL_I2C_ClearFlag_ADDR(I2Cx);
+
+    if (regLen == 1)
+    {
+        LL_I2C_TransmitData8(I2Cx, regAddress & 0xFF);
+        while(!LL_I2C_IsActiveFlag_TXE(I2Cx));
+    }
+    else if (regLen == 2)
+    {
+        LL_I2C_TransmitData8(I2Cx, (uint8_t)(regAddress >> 8));
+        while(!LL_I2C_IsActiveFlag_TXE(I2Cx));
+
+        LL_I2C_TransmitData8(I2Cx, (uint8_t)(regAddress & 0xFF));
+        while(!LL_I2C_IsActiveFlag_TXE(I2Cx));
+    }
+
+    /* ---- 3. Read phase: Get data bytes via DMA ---- */
+    LL_I2C_GenerateStartCondition(I2Cx);
+    while(!LL_I2C_IsActiveFlag_SB(I2Cx));
+
+    LL_I2C_TransmitData8(I2Cx, (slaveAddress | 0x01)); // Ensure Read bit (1)
+
+    while(!LL_I2C_IsActiveFlag_ADDR(I2Cx));
+
+    /* CRITICAL I2C DMA READ RULE:
+       To properly receive N bytes via DMA, NACK must be set BEFORE clearing ADDR flag.
+       If length == 1, set NACK. If length > 1, set ACK, but DMA/Peripheral will handle NACK
+       for the last byte if EVERR/TCIE is managed.
+       Simplification for DMA: Set NACK before clearing ADDR */
+    if(length == 1)
+    {
+        LL_I2C_AcknowledgeNextData(I2Cx, LL_I2C_NACK);
+    }
+    else
+    {
+        LL_I2C_AcknowledgeNextData(I2Cx, LL_I2C_ACK);
+    }
+
+    LL_I2C_ClearFlag_ADDR(I2Cx);
+
+    /* ---- 4. Arm DMA & I2C DMA Request ---- */
+    /* CRITICAL FIX: Enable RX DMA request, NOT TX */
+    LL_I2C_EnableDMAReq_RX(I2Cx);
+
+    /* Start the DMA Stream */
+    LL_DMA_EnableStream(I2C_DMA_INSTANCE, I2C_DMA_SREAM_RX);
+}
+
+
+
+__weak void I2C1_DMA_Rx_Completed(void)
+{
+
+}
+
+
+
+void DMA1_Stream0_IRQHandler(void)
+{
+    if (LL_DMA_IsActiveFlag_TC0(I2C_DMA_INSTANCE))
+    {
+        LL_DMA_ClearFlag_TC0(I2C_DMA_INSTANCE);
+
+        /* Disable DMA TC Interrupt and Stream */
+        LL_DMA_DisableIT_TC(I2C_DMA_INSTANCE, I2C_DMA_SREAM_RX);
+        LL_DMA_DisableStream(I2C_DMA_INSTANCE, I2C_DMA_SREAM_RX);
+
+        /* Terminate I2C Transaction */
+        LL_I2C_GenerateStopCondition(Active_I2Cx);
+
+        /* CRITICAL FIX: Disable RX DMA request */
+        LL_I2C_DisableDMAReq_RX(Active_I2Cx);
+
+        /* Mark transfer as complete */
+        I2C_DMA_Busy = 0;
+
+        I2C1_DMA_Rx_Completed();
+    }
 }
 
 
@@ -353,8 +501,8 @@ void DMA1_Stream1_IRQHandler(void)
         LL_DMA_ClearFlag_TC1(I2C_DMA_INSTANCE);
 
         /* Disable DMA TC Interrupt and Stream */
-        LL_DMA_DisableIT_TC(I2C_DMA_INSTANCE,I2C_DMA_STREAM);
-        LL_DMA_DisableStream(I2C_DMA_INSTANCE,I2C_DMA_STREAM);
+        LL_DMA_DisableIT_TC(I2C_DMA_INSTANCE,I2C_DMA_STREAM_TX);
+        LL_DMA_DisableStream(I2C_DMA_INSTANCE,I2C_DMA_STREAM_TX);
 
         /* Wait for I2C Byte Transfer Finished (last byte physically shifted out) */
         while (!LL_I2C_IsActiveFlag_BTF(Active_I2Cx)) { }

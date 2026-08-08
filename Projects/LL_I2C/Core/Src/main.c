@@ -39,6 +39,9 @@ uint8_t RTCDataWrite[3]={0};
 
 volatile uint8_t I2C_Tx_Completed=0;
 
+volatile uint8_t I2C_Rx_Completed=0;
+
+
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -83,21 +86,19 @@ int __io_putchar(int ch)
 }
 
 
-uint8_t bcdToDec(uint8_t bcd) {
-    return (bcd & 0x0F) + ((bcd >> 4) * 10);
-}
-
-uint8_t DEC_to_BCD(uint8_t dec)
-{
-    // Dividing by 10 shifts the tens digit to the lower nibble.
-    // Modulo 10 isolates the ones digit.
-    return (uint8_t)((dec / 10) << 4) | (dec % 10);
-}
-
 void I2C1_DMA_Tx_Completed(void)
 {
 	I2C_Tx_Completed=1;
 }
+
+
+void I2C1_DMA_Rx_Completed(void)
+{
+	I2C_Rx_Completed=1;
+}
+
+
+
 
 /* USER CODE END 0 */
 
@@ -149,27 +150,19 @@ int main(void)
 
 
 
-	  I2C_Mem_Read(I2C1,ds3231_addr,0x00,1,RTCData,3);
+	  I2C_Mem_Read_DMA(I2C1,MPu9250_Addr,0x00,1,RTCData,3);
 
-	  if((bcdToDec(RTCData[0]) % 5) == 0)
-	  {
-		  RTCDataWrite[0]=DEC_to_BCD(1);
-		  RTCDataWrite[1]=DEC_to_BCD(random()%10);
-		  RTCDataWrite[2]=DEC_to_BCD(random()%10);
-		  printf("New value set\r\n");
 
-		  //I2C_Mem_Write(I2C1,ds3231_addr,0x00,1,RTCDataWrite,3);
-		  I2C_Mem_Write_DMA(I2C1,ds3231_addr,0x00,1,RTCDataWrite,3);
-		  while(I2C_Tx_Completed==0);
-		  I2C_Tx_Completed=0;
 
-	  }
+	  while(I2C_Rx_Completed==0);
+	  I2C_Rx_Completed=0;
 
 	  printf("DS3231 register values:\r\n");
 
 	  printf("Seconds=%d\r\n",bcdToDec(RTCData[0]));
 	  printf("Minutes=%d\r\n",bcdToDec(RTCData[1]));
 	  printf("Hours=%d\r\n",bcdToDec(RTCData[2]));
+
 
 	  for (volatile int32_t i=0;i<1000000;i++)
 	  {
