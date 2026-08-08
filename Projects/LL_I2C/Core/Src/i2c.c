@@ -451,7 +451,6 @@ void I2C_Mem_Read_DMA(I2C_TypeDef *I2Cx, uint8_t slaveAddress, uint16_t regAddre
     LL_I2C_ClearFlag_ADDR(I2Cx);
 
     /* ---- 4. Arm DMA & I2C DMA Request ---- */
-    /* CRITICAL FIX: Enable RX DMA request, NOT TX */
     LL_I2C_EnableDMAReq_RX(I2Cx);
 
     /* Start the DMA Stream */
