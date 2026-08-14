@@ -18,15 +18,12 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
-#include "tim.h"
+#include "i2c.h"
 #include "gpio.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-#include "soft_uart.h"
-
-#include "stdio.h"
-
+#include "INA219.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -47,8 +44,11 @@
 /* Private variables ---------------------------------------------------------*/
 
 /* USER CODE BEGIN PV */
-uint8_t buffer[SOFT_UART_TX_BUF_SIZE]={0};
-uint8_t counter=0;
+INA219_t ina;
+
+float vbus, vshunt, cur, pwr;
+
+
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -91,9 +91,12 @@ int main(void)
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
-  MX_TIM3_Init();
+  MX_I2C1_Init();
   /* USER CODE BEGIN 2 */
-  SoftUART_Init();
+  if(INA219_Init(&ina, &hi2c1, 0x40, 0.1f, 3.2f) != HAL_OK)
+	{
+	  Error_Handler();
+	}
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -103,15 +106,19 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
+	  if (INA219_ConversionReady(&ina))
+	  {
+		  INA219_Read_bus_voltage_mv(&ina, &vbus);
+		  INA219_Read_shunt_voltage_mv(&ina, &vshunt);
+		  INA219_Read_current_mA(&ina, &cur);
+		  INA219_Read_power_mW(&ina, &pwr);
+	  }
 
-	  uint16_t len=snprintf(buffer,SOFT_UART_TX_BUF_SIZE, "counter value = %d \r\n", counter ++);
+	  HAL_Delay(100);
 
 
-	  SoftUART_SendBuffer(buffer,len);
-	  while(SoftUART_IsBusy());
 
 
-	  HAL_Delay(10);
   }
   /* USER CODE END 3 */
 }
