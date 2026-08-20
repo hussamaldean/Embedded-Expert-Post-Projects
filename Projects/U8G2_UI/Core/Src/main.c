@@ -304,13 +304,6 @@ void render_audio_visualizer(void) {
     }
 }
 
-/* Add to your main loop:
-while(1) {
-    render_audio_visualizer();
-}
-*/
-
-
 
 
 /* USER CODE END 0 */
