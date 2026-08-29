@@ -89,7 +89,7 @@ int main(void)
   MX_GPIO_Init();
   MX_ADC1_Init();
   /* USER CODE BEGIN 2 */
-
+  ADC_Cont_IT_Start();
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -99,8 +99,13 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-	  adc_value=ADCReadBlocking();
-	  HAL_Delay(200);
+
+	  if(Is_Results_Ready()==1)
+	  {
+		  adc_value=Read_ADC_Results();
+		  Clear_ADC_Ready();
+	  }
+
   }
   /* USER CODE END 3 */
 }

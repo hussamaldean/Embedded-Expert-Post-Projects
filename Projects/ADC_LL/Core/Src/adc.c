@@ -21,7 +21,9 @@
 #include "adc.h"
 
 /* USER CODE BEGIN 0 */
+volatile uint8_t adc_ready;
 
+volatile uint16_t adc_result;
 /* USER CODE END 0 */
 
 /* ADC1 init function */
@@ -50,6 +52,10 @@ void MX_ADC1_Init(void)
   GPIO_InitStruct.Pull = LL_GPIO_PULL_NO;
   LL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
+  /* ADC1 interrupt Init */
+  NVIC_SetPriority(ADC_IRQn, NVIC_EncodePriority(NVIC_GetPriorityGrouping(),0, 0));
+  NVIC_EnableIRQ(ADC_IRQn);
+
   /* USER CODE BEGIN ADC1_Init 1 */
 
   /* USER CODE END ADC1_Init 1 */
@@ -63,11 +69,11 @@ void MX_ADC1_Init(void)
   ADC_REG_InitStruct.TriggerSource = LL_ADC_REG_TRIG_SOFTWARE;
   ADC_REG_InitStruct.SequencerLength = LL_ADC_REG_SEQ_SCAN_DISABLE;
   ADC_REG_InitStruct.SequencerDiscont = LL_ADC_REG_SEQ_DISCONT_DISABLE;
-  ADC_REG_InitStruct.ContinuousMode = LL_ADC_REG_CONV_SINGLE;
+  ADC_REG_InitStruct.ContinuousMode = LL_ADC_REG_CONV_CONTINUOUS;
   ADC_REG_InitStruct.DMATransfer = LL_ADC_REG_DMA_TRANSFER_NONE;
   LL_ADC_REG_Init(ADC1, &ADC_REG_InitStruct);
   LL_ADC_REG_SetFlagEndOfConversion(ADC1, LL_ADC_REG_FLAG_EOC_UNITARY_CONV);
-  ADC_CommonInitStruct.CommonClock = LL_ADC_CLOCK_SYNC_PCLK_DIV2;
+  ADC_CommonInitStruct.CommonClock = LL_ADC_CLOCK_SYNC_PCLK_DIV8;
   ADC_CommonInitStruct.Multimode = LL_ADC_MULTI_INDEPENDENT;
   LL_ADC_CommonInit(__LL_ADC_COMMON_INSTANCE(ADC1), &ADC_CommonInitStruct);
 
@@ -100,6 +106,44 @@ uint16_t ADCReadBlocking(void)
 	LL_ADC_Disable(ADC1);
 
 	return val;
+}
+
+uint8_t Is_Results_Ready(void)
+{
+	return adc_ready;
+}
+
+void Clear_ADC_Ready(void)
+{
+	adc_ready=0;
+}
+
+uint16_t Read_ADC_Results(void)
+{
+	return adc_result;
+}
+
+void ADC_Cont_IT_Start(void)
+{
+
+	adc_ready=0;
+
+	LL_ADC_EnableIT_EOCS(ADC1);   // enable ADC EOC interrupt
+	LL_ADC_Enable(ADC1);          // enable ADC
+	LL_ADC_REG_StartConversionSWStart(ADC1); // start conversion
+
+
+}
+
+void ADC_IRQHandler (void)
+{
+	if (LL_ADC_IsActiveFlag_EOCS(ADC1))
+	{
+		adc_result = LL_ADC_REG_ReadConversionData12(ADC1);
+		adc_ready = 1;
+
+		LL_ADC_ClearFlag_EOCS(ADC1);
+	}
 }
 /* USER CODE END 1 */
 
