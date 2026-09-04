@@ -53,11 +53,10 @@
 u8g2_t myDisplay;
 
 // --- UI and Simulation Variables ---
-static float sim_temp = 25.0f;
-static float sim_cpu = 50.0f;
-static uint8_t sim_load = 50;
-static uint32_t start_tick = 0;
-
+//static float sim_temp = 25.0f;
+//static float sim_cpu = 50.0f;
+//static uint8_t sim_load = 50;
+//static uint32_t start_tick = 0;
 
 
 /* USER CODE END PV */
@@ -138,7 +137,7 @@ uint8_t u8x8_i2c(u8x8_t *u8x8, uint8_t msg, uint8_t arg_int, void *arg_ptr)
       buf_idx = 0;
       break;
     case U8X8_MSG_BYTE_END_TRANSFER:
-		#define OLED_Addr (0x3C<<1)
+		#define OLED_Addr (0x3D<<1)
     	HAL_I2C_Master_Transmit(&hi2c1, OLED_Addr, buffer, buf_idx, 100);
       break;
     default:
@@ -161,150 +160,327 @@ void draw_progress_bar(uint8_t x, uint8_t y, uint8_t w, uint8_t h, uint8_t perce
     }
 }
 
-// The main UI rendering function
-void render_ui(void) {
-    // 1. Gather data
-    uint32_t uptime = (HAL_GetTick() - start_tick) / 1000; // Seconds since boot
+//// The main UI rendering function
+//void render_ui(void) {
+//    // 1. Gather data
+//    uint32_t uptime = (HAL_GetTick() - start_tick) / 1000; // Seconds since boot
+//
+//    // 2. Format data into strings
+//    char temp_str[20];
+//    char cpu_str[20];
+//    char time_str[20];
+//    char load_str[20];
+//
+//    // Convert seconds to HH:MM:SS
+//    uint32_t h = uptime / 3600;
+//    uint32_t m = (uptime % 3600) / 60;
+//    uint32_t s = uptime % 60;
+//
+//    snprintf(temp_str, sizeof(temp_str), "Core:  %.1f C", sim_temp);
+//    snprintf(cpu_str, sizeof(cpu_str), "CPU:   %.1f %%", sim_cpu);
+//    snprintf(time_str, sizeof(time_str), "Time:  %02d:%02d:%02d", h, m, s);
+//    snprintf(load_str, sizeof(load_str), "%d%%", sim_load);
+//
+//    // 3. Clear the internal buffer
+//    u8g2_ClearBuffer(&myDisplay);
+//
+//    // 4. Draw the Header (Using a bold font)
+//    u8g2_SetFont(&myDisplay, u8g2_font_6x13B_tr);
+//    u8g2_DrawStr(&myDisplay, 0, 10, "TEMP STATUS");
+//    u8g2_DrawHLine(&myDisplay, 0, 13, 128); // Underline the header
+//
+//    // 5. Draw the Text Data (Using a standard font)
+//    u8g2_SetFont(&myDisplay, u8g2_font_6x10_tr);
+//    u8g2_DrawStr(&myDisplay, 0, 28, temp_str);
+//    u8g2_DrawStr(&myDisplay, 0, 42, cpu_str);
+//    u8g2_DrawStr(&myDisplay, 0, 54, time_str);
+//
+//    // 6. Draw the Progress Bar
+//    u8g2_SetFont(&myDisplay, u8g2_font_5x7_tr);
+//    u8g2_DrawStr(&myDisplay, 0, 63, "LOAD");
+//    draw_progress_bar(25, 56, 85, 7, sim_load);
+//
+//    // Draw percentage text at the end of the bar
+//    u8g2_DrawStr(&myDisplay, 112, 63, load_str);
+//
+//    // 7. Send the buffer to the screen
+//    u8g2_SendBuffer(&myDisplay);
+//}
+//
+//
+//
+//
+//#define NUM_BARS 16
+//#define MAX_BAR_HEIGHT 40
+//
+//void render_audio_visualizer(void) {
+//    static uint32_t last_update = 0;
+//    static float time_counter = 0.0f;
+//
+//    /* Persistent peak markers that slowly fall down */
+//    static uint8_t peak_heights[NUM_BARS] = {0};
+//    static float peak_fall_speed[NUM_BARS] = {0};
+//
+//    uint32_t now = HAL_GetTick();
+//
+//    /* Update ~30 frames per second (non-blocking) */
+//    if (now - last_update > 33) {
+//        last_update = now;
+//        time_counter += 0.15f;
+//
+//        u8g2_ClearBuffer(&myDisplay);
+//
+//        /* 1. Draw UI Header */
+//        u8g2_SetFont(&myDisplay, u8g2_font_5x7_tr);
+//        u8g2_DrawStr(&myDisplay, 0, 7, "AUDIO SCAN");
+//
+//        /* Sweeping needle that triggers the bars */
+//        uint8_t needle_x = (uint8_t)((sinf(time_counter * 0.5f) + 1.0f) * 60.0f);
+//        u8g2_DrawLine(&myDisplay, needle_x, 2, needle_x + 4, 7);
+//        u8g2_DrawLine(&myDisplay, needle_x, 2, needle_x - 4, 7);
+//        u8g2_DrawVLine(&myDisplay, needle_x, 0, 8);
+//
+//        /* Right aligned dB text */
+//        u8g2_DrawStr(&myDisplay, 100, 7, "-12.4dB");
+//
+//        u8g2_DrawHLine(&myDisplay, 0, 9, 128);
+//
+//        /* 2. Draw the 16 Spectrum Bars */
+//        for (int i = 0; i < NUM_BARS; i++) {
+//            /* Simulate an audio curve (lower freqs have higher amplitude, falls off to right) */
+//            float base_amp = (1.0f - (float)i / NUM_BARS) * 0.6f + 0.1f;
+//
+//            /* Create dynamic waveforms with slightly different sine frequencies */
+//            float wave1 = sinf(time_counter + i * 0.3f);
+//            float wave2 = sinf(time_counter * 1.3f + i * 0.1f);
+//            float combined_wave = (wave1 + wave2) / 2.0f; /* Range: -1.0 to 1.0 */
+//
+//            uint8_t bar_val = (uint8_t)((combined_wave + 1.0f) * base_amp * (MAX_BAR_HEIGHT / 2.0f));
+//
+//            /* Force trigger specific bars when the needle passes over them */
+//            if (abs(needle_x - (i * 8 + 4)) < 6) {
+//                bar_val = MAX_BAR_HEIGHT - (rand() % 10);
+//            }
+//
+//            if (bar_val > MAX_BAR_HEIGHT) bar_val = MAX_BAR_HEIGHT;
+//
+//            /* Update persistent peaks */
+//            if (bar_val > peak_heights[i]) {
+//                peak_heights[i] = bar_val;
+//                peak_fall_speed[i] = 0;
+//            } else {
+//                peak_fall_speed[i] += 0.2f; /* Gravity accelerating */
+//                peak_heights[i] -= (uint8_t)peak_fall_speed[i];
+//                if (peak_heights[i] > MAX_BAR_HEIGHT) peak_heights[i] = 0; /* Underflow check */
+//            }
+//
+//            /* Draw the main bar (Solid) */
+//            uint8_t bar_x = i * 8;
+//            uint8_t bar_y = 10 + (MAX_BAR_HEIGHT - bar_val);
+//            u8g2_DrawBox(&myDisplay, bar_x + 1, bar_y, 6, bar_val);
+//
+//            /* Draw the peak marker (line on top) */
+//            uint8_t peak_y = 10 + (MAX_BAR_HEIGHT - peak_heights[i]);
+//            u8g2_DrawHLine(&myDisplay, bar_x + 1, peak_y, 6);
+//
+//            /* Draw a centered baseline shadow */
+//            uint8_t mid_y = 10 + (MAX_BAR_HEIGHT / 2);
+//            u8g2_DrawHLine(&myDisplay, bar_x + 1, mid_y, 6);
+//        }
+//
+//        /* 3. Draw the Sub-bass bouncing bar at the bottom */
+//        float sub_wave = (sinf(time_counter * 0.8f) + 1.0f) / 2.0f; /* 0.0 to 1.0 */
+//        uint8_t sub_h = (uint8_t)(sub_wave * 10.0f);
+//        u8g2_DrawBox(&myDisplay, 0, 64 - sub_h, 128, sub_h);
+//
+//        /* 4. Draw moving tick marks over the sub bar */
+//        for (int i = 0; i < 8; i++) {
+//            int tick_x = ((int)(time_counter * 10) + i * 20) % 140 - 10;
+//            u8g2_DrawVLine(&myDisplay, tick_x, 60, 4);
+//        }
+//
+//        u8g2_SendBuffer(&myDisplay);
+//    }
+//}
 
-    // 2. Format data into strings
-    char temp_str[20];
-    char cpu_str[20];
-    char time_str[20];
-    char load_str[20];
+/* --- Menu Enums & Structs --- */
+typedef enum {
+    MENU_ACTION_NONE,
+    MENU_ACTION_OPEN_SUBMENU,
+    MENU_ACTION_BACK,
+    MENU_ACTION_TOGGLE,
+    MENU_ACTION_ACTION_1,
+    MENU_ACTION_ACTION_2
+} MenuAction_t;
 
-    // Convert seconds to HH:MM:SS
-    uint32_t h = uptime / 3600;
-    uint32_t m = (uptime % 3600) / 60;
-    uint32_t s = uptime % 60;
+typedef struct {
+    const char* name;
+    MenuAction_t action;
+    uint8_t* value_ptr;
+} MenuItem_t;
 
-    snprintf(temp_str, sizeof(temp_str), "Core:  %.1f C", sim_temp);
-    snprintf(cpu_str, sizeof(cpu_str), "CPU:   %.1f %%", sim_cpu);
-    snprintf(time_str, sizeof(time_str), "Time:  %02d:%02d:%02d", h, m, s);
-    snprintf(load_str, sizeof(load_str), "%d%%", sim_load);
+typedef struct {
+    const char* title;
+    const MenuItem_t* items;
+    uint8_t item_count;
+} MenuScreen_t;
 
-    // 3. Clear the internal buffer
+/* --- Define Your Menus --- */
+const MenuItem_t sub2_items[] = {
+    {"Option A", MENU_ACTION_NONE, NULL},
+    {"Option B", MENU_ACTION_NONE, NULL},
+    {"Option C", MENU_ACTION_NONE, NULL},
+    {"Back",    MENU_ACTION_BACK,  NULL}
+};
+
+static uint8_t setting_led_state = 1;
+static uint8_t setting_buzz_state = 0;
+
+const MenuItem_t sub1_items[] = {
+    {"LED Enable",  MENU_ACTION_TOGGLE, &setting_led_state},
+    {"Buzzer Enbl", MENU_ACTION_TOGGLE, &setting_buzz_state},
+    {"Sub 2",       MENU_ACTION_OPEN_SUBMENU, NULL},
+    {"Back",        MENU_ACTION_BACK,  NULL}
+};
+
+const MenuItem_t main_items[] = {
+    {"Start System", MENU_ACTION_ACTION_1, NULL},
+    {"View Data",    MENU_ACTION_ACTION_2, NULL},
+    {"Settings",     MENU_ACTION_OPEN_SUBMENU, NULL},
+    {"Reboot",       MENU_ACTION_NONE, NULL}
+};
+
+const MenuScreen_t screens[] = {
+    {"MAIN MENU", main_items, 4},
+    {"SETTINGS",  sub1_items, 4},
+    {"SUB MENU 2",sub2_items, 4}
+};
+
+/* --- Menu State Variables --- */
+#define MAX_SCREENS_DEPTH 3
+uint8_t screen_stack[MAX_SCREENS_DEPTH] = {0, 0, 0};
+uint8_t screen_stack_idx = 0;
+uint8_t selected_item = 0;
+
+/* --- UI Layout Variables --- */
+#define MENU_FONT      u8g2_font_6x10_tr
+#define MENU_FONT_REG  u8g2_font_6x10_tr
+#define ITEM_HEIGHT    12
+#define MAX_VISIBLE    4
+
+/* --- Redraw Flag --- */
+volatile uint8_t ui_needs_update = 1;
+
+/* --- Drawing Logic --- */
+void render_menu_ui(void) {
+    uint8_t current_screen_idx = screen_stack[screen_stack_idx];
+    const MenuScreen_t* current_screen = &screens[current_screen_idx];
+
     u8g2_ClearBuffer(&myDisplay);
 
-    // 4. Draw the Header (Using a bold font)
-    u8g2_SetFont(&myDisplay, u8g2_font_6x13B_tr);
-    u8g2_DrawStr(&myDisplay, 0, 10, "TEMP STATUS");
-    u8g2_DrawHLine(&myDisplay, 0, 13, 128); // Underline the header
+    // 1. Draw Title Bar
+    u8g2_SetFont(&myDisplay, MENU_FONT);
+    u8g2_DrawBox(&myDisplay, 0, 0, 128, 12);
+    u8g2_SetDrawColor(&myDisplay, 0);
+    u8g2_DrawStr(&myDisplay, 2, 10, current_screen->title);
+    u8g2_SetDrawColor(&myDisplay, 1);
 
-    // 5. Draw the Text Data (Using a standard font)
-    u8g2_SetFont(&myDisplay, u8g2_font_6x10_tr);
-    u8g2_DrawStr(&myDisplay, 0, 28, temp_str);
-    u8g2_DrawStr(&myDisplay, 0, 42, cpu_str);
-    u8g2_DrawStr(&myDisplay, 0, 54, time_str);
+    // 2. Draw Scroll Indicator
+    if (current_screen->item_count > MAX_VISIBLE) {
+        uint8_t scroll_track_h = MAX_VISIBLE * ITEM_HEIGHT;
+        uint8_t scroll_thumb_h = (scroll_track_h * MAX_VISIBLE) / current_screen->item_count;
+        uint8_t scroll_thumb_y = 13 + ((selected_item * scroll_track_h) / current_screen->item_count);
+        u8g2_DrawVLine(&myDisplay, 126, 13, scroll_track_h);
+        u8g2_DrawBox(&myDisplay, 125, scroll_thumb_y, 3, scroll_thumb_h);
+    }
 
-    // 6. Draw the Progress Bar
-    u8g2_SetFont(&myDisplay, u8g2_font_5x7_tr);
-    u8g2_DrawStr(&myDisplay, 0, 63, "LOAD");
-    draw_progress_bar(25, 56, 85, 7, sim_load);
+    // 3. Draw Menu Items
+    uint8_t start_idx = 0;
+    if (current_screen->item_count > MAX_VISIBLE && selected_item >= MAX_VISIBLE - 1) {
+        start_idx = selected_item - (MAX_VISIBLE - 2);
+        if (start_idx + MAX_VISIBLE > current_screen->item_count) {
+            start_idx = current_screen->item_count - MAX_VISIBLE;
+        }
+    }
 
-    // Draw percentage text at the end of the bar
-    u8g2_DrawStr(&myDisplay, 112, 63, load_str);
+    u8g2_SetFont(&myDisplay, MENU_FONT_REG);
+    for (uint8_t i = 0; i < MAX_VISIBLE && (start_idx + i) < current_screen->item_count; i++) {
+        uint8_t item_idx = start_idx + i;
+        uint8_t y_pos = 14 + (i * ITEM_HEIGHT);
 
-    // 7. Send the buffer to the screen
+        if (item_idx == selected_item) {
+            u8g2_DrawBox(&myDisplay, 0, y_pos - 1, 124, ITEM_HEIGHT);
+            u8g2_SetDrawColor(&myDisplay, 0);
+        } else {
+            u8g2_SetDrawColor(&myDisplay, 1);
+        }
+
+        u8g2_DrawStr(&myDisplay, 2, y_pos + 7, current_screen->items[item_idx].name);
+
+        if (current_screen->items[item_idx].action == MENU_ACTION_TOGGLE) {
+            if (current_screen->items[item_idx].value_ptr != NULL) {
+                uint8_t val = *(current_screen->items[item_idx].value_ptr);
+                const char* state_str = val ? "[ON]" : "[OFF]";
+                u8g2_DrawStr(&myDisplay, 95, y_pos + 7, state_str);
+            }
+        }
+        u8g2_SetDrawColor(&myDisplay, 1);
+    }
     u8g2_SendBuffer(&myDisplay);
 }
 
-
-
-
-#define NUM_BARS 16
-#define MAX_BAR_HEIGHT 40
-
-void render_audio_visualizer(void) {
-    static uint32_t last_update = 0;
-    static float time_counter = 0.0f;
-
-    /* Persistent peak markers that slowly fall down */
-    static uint8_t peak_heights[NUM_BARS] = {0};
-    static float peak_fall_speed[NUM_BARS] = {0};
-
-    uint32_t now = HAL_GetTick();
-
-    /* Update ~30 frames per second (non-blocking) */
-    if (now - last_update > 33) {
-        last_update = now;
-        time_counter += 0.15f;
-
-        u8g2_ClearBuffer(&myDisplay);
-
-        /* 1. Draw UI Header */
-        u8g2_SetFont(&myDisplay, u8g2_font_5x7_tr);
-        u8g2_DrawStr(&myDisplay, 0, 7, "AUDIO SCAN");
-
-        /* Sweeping needle that triggers the bars */
-        uint8_t needle_x = (uint8_t)((sinf(time_counter * 0.5f) + 1.0f) * 60.0f);
-        u8g2_DrawLine(&myDisplay, needle_x, 2, needle_x + 4, 7);
-        u8g2_DrawLine(&myDisplay, needle_x, 2, needle_x - 4, 7);
-        u8g2_DrawVLine(&myDisplay, needle_x, 0, 8);
-
-        /* Right aligned dB text */
-        u8g2_DrawStr(&myDisplay, 100, 7, "-12.4dB");
-
-        u8g2_DrawHLine(&myDisplay, 0, 9, 128);
-
-        /* 2. Draw the 16 Spectrum Bars */
-        for (int i = 0; i < NUM_BARS; i++) {
-            /* Simulate an audio curve (lower freqs have higher amplitude, falls off to right) */
-            float base_amp = (1.0f - (float)i / NUM_BARS) * 0.6f + 0.1f;
-
-            /* Create dynamic waveforms with slightly different sine frequencies */
-            float wave1 = sinf(time_counter + i * 0.3f);
-            float wave2 = sinf(time_counter * 1.3f + i * 0.1f);
-            float combined_wave = (wave1 + wave2) / 2.0f; /* Range: -1.0 to 1.0 */
-
-            uint8_t bar_val = (uint8_t)((combined_wave + 1.0f) * base_amp * (MAX_BAR_HEIGHT / 2.0f));
-
-            /* Force trigger specific bars when the needle passes over them */
-            if (abs(needle_x - (i * 8 + 4)) < 6) {
-                bar_val = MAX_BAR_HEIGHT - (rand() % 10);
-            }
-
-            if (bar_val > MAX_BAR_HEIGHT) bar_val = MAX_BAR_HEIGHT;
-
-            /* Update persistent peaks */
-            if (bar_val > peak_heights[i]) {
-                peak_heights[i] = bar_val;
-                peak_fall_speed[i] = 0;
-            } else {
-                peak_fall_speed[i] += 0.2f; /* Gravity accelerating */
-                peak_heights[i] -= (uint8_t)peak_fall_speed[i];
-                if (peak_heights[i] > MAX_BAR_HEIGHT) peak_heights[i] = 0; /* Underflow check */
-            }
-
-            /* Draw the main bar (Solid) */
-            uint8_t bar_x = i * 8;
-            uint8_t bar_y = 10 + (MAX_BAR_HEIGHT - bar_val);
-            u8g2_DrawBox(&myDisplay, bar_x + 1, bar_y, 6, bar_val);
-
-            /* Draw the peak marker (line on top) */
-            uint8_t peak_y = 10 + (MAX_BAR_HEIGHT - peak_heights[i]);
-            u8g2_DrawHLine(&myDisplay, bar_x + 1, peak_y, 6);
-
-            /* Draw a centered baseline shadow */
-            uint8_t mid_y = 10 + (MAX_BAR_HEIGHT / 2);
-            u8g2_DrawHLine(&myDisplay, bar_x + 1, mid_y, 6);
-        }
-
-        /* 3. Draw the Sub-bass bouncing bar at the bottom */
-        float sub_wave = (sinf(time_counter * 0.8f) + 1.0f) / 2.0f; /* 0.0 to 1.0 */
-        uint8_t sub_h = (uint8_t)(sub_wave * 10.0f);
-        u8g2_DrawBox(&myDisplay, 0, 64 - sub_h, 128, sub_h);
-
-        /* 4. Draw moving tick marks over the sub bar */
-        for (int i = 0; i < 8; i++) {
-            int tick_x = ((int)(time_counter * 10) + i * 20) % 140 - 10;
-            u8g2_DrawVLine(&myDisplay, tick_x, 60, 4);
-        }
-
-        u8g2_SendBuffer(&myDisplay);
-    }
+/* --- Input Handling Logic --- */
+void menu_handle_up(void) {
+    uint8_t current_screen_idx = screen_stack[screen_stack_idx];
+    uint8_t item_count = screens[current_screen_idx].item_count;
+    if (selected_item > 0) selected_item--;
+    else selected_item = item_count - 1; // Wrap around
+    ui_needs_update = 1;
 }
 
+void menu_handle_down(void) {
+    uint8_t current_screen_idx = screen_stack[screen_stack_idx];
+    uint8_t item_count = screens[current_screen_idx].item_count;
+    if (selected_item < item_count - 1) selected_item++;
+    else selected_item = 0; // Wrap around
+    ui_needs_update = 1;
+}
 
+void menu_handle_ok(void) {
+    uint8_t current_screen_idx = screen_stack[screen_stack_idx];
+    const MenuItem_t* selected_menu_item = &screens[current_screen_idx].items[selected_item];
+
+    switch (selected_menu_item->action) {
+        case MENU_ACTION_OPEN_SUBMENU:
+            if (screen_stack_idx < MAX_SCREENS_DEPTH - 1) {
+                screen_stack_idx++;
+                if (current_screen_idx == 0 && selected_item == 2) screen_stack[screen_stack_idx] = 1;
+                else if (current_screen_idx == 1 && selected_item == 2) screen_stack[screen_stack_idx] = 2;
+                selected_item = 0;
+            }
+            break;
+        case MENU_ACTION_BACK:
+            if (screen_stack_idx > 0) {
+                screen_stack_idx--;
+                selected_item = 0;
+            }
+            break;
+        case MENU_ACTION_TOGGLE:
+            if (selected_menu_item->value_ptr != NULL) {
+                *(selected_menu_item->value_ptr) = !(*(selected_menu_item->value_ptr));
+            }
+            break;
+        case MENU_ACTION_ACTION_1:
+            // Do something (Start System)
+            break;
+        case MENU_ACTION_ACTION_2:
+            // Do something (View Data)
+            break;
+        default:
+            break;
+    }
+    ui_needs_update = 1;
+}
 
 /* USER CODE END 0 */
 
@@ -347,11 +523,13 @@ int main(void)
     u8g2_SetPowerSave(&myDisplay, 0);
     u8g2_ClearBuffer(&myDisplay);
 
-	// Record start time
-	start_tick = HAL_GetTick();
+    render_menu_ui();
 
-	uint32_t last_update = 0;
-	float time_counter = 0.0f; // Used for sine wave simulation
+//	// Record start time
+//	start_tick = HAL_GetTick();
+//
+//	uint32_t last_update = 0;
+//	float time_counter = 0.0f; // Used for sine wave simulation
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -387,7 +565,35 @@ int main(void)
 //	              render_ui();
 //	          }
 
-	  render_audio_visualizer();
+//	  render_audio_visualizer();
+
+
+	  // 1. Read Buttons with simple software debounce (200ms)
+	        static uint32_t last_btn_tick = 0;
+	        uint32_t now = HAL_GetTick();
+
+	        if (now - last_btn_tick > 200) {
+
+	            if (HAL_GPIO_ReadPin(Up_GPIO_Port, Up_Pin) == GPIO_PIN_RESET) {
+	                menu_handle_up();
+	                last_btn_tick = now;
+	            }
+	            else if (HAL_GPIO_ReadPin(Down_GPIO_Port, Down_Pin) == GPIO_PIN_RESET) {
+	                menu_handle_down();
+	                last_btn_tick = now;
+	            }
+	            else if (HAL_GPIO_ReadPin(Ok_GPIO_Port, Ok_Pin) == GPIO_PIN_RESET) {
+	                menu_handle_ok();
+	                last_btn_tick = now;
+	            }
+	        }
+
+	        // 2. State Machine for UI Redraw
+	        // Only draw if a button was pressed
+	        if (ui_needs_update) {
+	            render_menu_ui();
+	            ui_needs_update = 0; // Clear the flag
+	        }
   }
   /* USER CODE END 3 */
 }

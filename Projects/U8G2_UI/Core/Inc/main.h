@@ -57,12 +57,18 @@ void Error_Handler(void);
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/
+#define Up_Pin GPIO_PIN_0
+#define Up_GPIO_Port GPIOC
+#define Down_Pin GPIO_PIN_1
+#define Down_GPIO_Port GPIOC
 #define CS_Pin GPIO_PIN_0
 #define CS_GPIO_Port GPIOA
 #define DC_Pin GPIO_PIN_1
 #define DC_GPIO_Port GPIOA
 #define RST_Pin GPIO_PIN_4
 #define RST_GPIO_Port GPIOA
+#define Ok_Pin GPIO_PIN_0
+#define Ok_GPIO_Port GPIOB
 
 /* USER CODE BEGIN Private defines */
 
