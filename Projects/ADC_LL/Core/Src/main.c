@@ -19,6 +19,7 @@
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
 #include "adc.h"
+#include "dma.h"
 #include "gpio.h"
 
 /* Private includes ----------------------------------------------------------*/
@@ -87,9 +88,10 @@ int main(void)
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
+  MX_DMA_Init();
   MX_ADC1_Init();
   /* USER CODE BEGIN 2 */
-  ADC_Cont_IT_Start();
+  ADC_Start_DMA_SingleCHannel(&adc_value);
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -99,12 +101,6 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-
-	  if(Is_Results_Ready()==1)
-	  {
-		  adc_value=Read_ADC_Results();
-		  Clear_ADC_Ready();
-	  }
 
   }
   /* USER CODE END 3 */

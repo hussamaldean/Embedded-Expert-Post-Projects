@@ -52,9 +52,26 @@ void MX_ADC1_Init(void)
   GPIO_InitStruct.Pull = LL_GPIO_PULL_NO;
   LL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
-  /* ADC1 interrupt Init */
-  NVIC_SetPriority(ADC_IRQn, NVIC_EncodePriority(NVIC_GetPriorityGrouping(),0, 0));
-  NVIC_EnableIRQ(ADC_IRQn);
+  /* ADC1 DMA Init */
+
+  /* ADC1 Init */
+  LL_DMA_SetChannelSelection(DMA2, LL_DMA_STREAM_0, LL_DMA_CHANNEL_0);
+
+  LL_DMA_SetDataTransferDirection(DMA2, LL_DMA_STREAM_0, LL_DMA_DIRECTION_PERIPH_TO_MEMORY);
+
+  LL_DMA_SetStreamPriorityLevel(DMA2, LL_DMA_STREAM_0, LL_DMA_PRIORITY_LOW);
+
+  LL_DMA_SetMode(DMA2, LL_DMA_STREAM_0, LL_DMA_MODE_CIRCULAR);
+
+  LL_DMA_SetPeriphIncMode(DMA2, LL_DMA_STREAM_0, LL_DMA_PERIPH_NOINCREMENT);
+
+  LL_DMA_SetMemoryIncMode(DMA2, LL_DMA_STREAM_0, LL_DMA_MEMORY_INCREMENT);
+
+  LL_DMA_SetPeriphSize(DMA2, LL_DMA_STREAM_0, LL_DMA_PDATAALIGN_HALFWORD);
+
+  LL_DMA_SetMemorySize(DMA2, LL_DMA_STREAM_0, LL_DMA_MDATAALIGN_HALFWORD);
+
+  LL_DMA_DisableFifoMode(DMA2, LL_DMA_STREAM_0);
 
   /* USER CODE BEGIN ADC1_Init 1 */
 
@@ -70,7 +87,7 @@ void MX_ADC1_Init(void)
   ADC_REG_InitStruct.SequencerLength = LL_ADC_REG_SEQ_SCAN_DISABLE;
   ADC_REG_InitStruct.SequencerDiscont = LL_ADC_REG_SEQ_DISCONT_DISABLE;
   ADC_REG_InitStruct.ContinuousMode = LL_ADC_REG_CONV_CONTINUOUS;
-  ADC_REG_InitStruct.DMATransfer = LL_ADC_REG_DMA_TRANSFER_NONE;
+  ADC_REG_InitStruct.DMATransfer = LL_ADC_REG_DMA_TRANSFER_UNLIMITED;
   LL_ADC_REG_Init(ADC1, &ADC_REG_InitStruct);
   LL_ADC_REG_SetFlagEndOfConversion(ADC1, LL_ADC_REG_FLAG_EOC_UNITARY_CONV);
   ADC_CommonInitStruct.CommonClock = LL_ADC_CLOCK_SYNC_PCLK_DIV8;
@@ -134,6 +151,23 @@ void ADC_Cont_IT_Start(void)
 
 
 }
+
+
+void ADC_Start_DMA_SingleCHannel(uint16_t *adcBuff)
+{
+	LL_DMA_DisableStream(DMA2, LL_DMA_STREAM_0);
+	while (LL_DMA_IsEnabledStream(DMA2, LL_DMA_STREAM_0));
+
+	LL_DMA_SetPeriphAddress(DMA2, LL_DMA_STREAM_0, LL_ADC_DMA_GetRegAddr(ADC1, LL_ADC_DMA_REG_REGULAR_DATA));
+	LL_DMA_SetMemoryAddress(DMA2, LL_DMA_STREAM_0, (uint32_t)adcBuff);
+	LL_DMA_SetDataLength(DMA2, LL_DMA_STREAM_0, 1);
+
+	LL_DMA_EnableStream(DMA2, LL_DMA_STREAM_0);
+
+	LL_ADC_Enable(ADC1);
+	LL_ADC_REG_StartConversionSWStart(ADC1);
+}
+
 
 void ADC_IRQHandler (void)
 {
