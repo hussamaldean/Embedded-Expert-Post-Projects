@@ -45,7 +45,7 @@
 /* Private variables ---------------------------------------------------------*/
 
 /* USER CODE BEGIN PV */
-uint16_t adc_value;
+uint16_t adc_value[4];
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -91,7 +91,8 @@ int main(void)
   MX_DMA_Init();
   MX_ADC1_Init();
   /* USER CODE BEGIN 2 */
-  ADC_Start_DMA_SingleCHannel(&adc_value);
+  //ADC_Start_DMA_SingleCHannel(&adc_value);
+  ADC_Start_DMA_MultiChannnel(adc_value,4);
   /* USER CODE END 2 */
 
   /* Infinite loop */
