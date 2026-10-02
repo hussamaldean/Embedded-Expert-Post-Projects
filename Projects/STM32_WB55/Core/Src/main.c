@@ -59,7 +59,10 @@ void PeriphCommonClock_Config(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
+extern uint8_t Send_Data_To_Phone(uint8_t *data, uint16_t length);
+extern void Send_Test_Data(void);
 
+uint32_t lastTestSendTime;
 /* USER CODE END 0 */
 
 /**
@@ -117,7 +120,12 @@ int main(void)
     MX_APPE_Process();
 
     /* USER CODE BEGIN 3 */
-
+    if (HAL_GetTick() - lastTestSendTime > 1000) {
+                // Check if we're connected (notificationsEnabled is in custom_app.c)
+                // We'll check by trying to send, or use a global flag
+                Send_Test_Data();
+                lastTestSendTime = HAL_GetTick();
+        }
   }
   /* USER CODE END 3 */
 }

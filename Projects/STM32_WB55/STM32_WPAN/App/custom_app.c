@@ -73,7 +73,11 @@ uint8_t UpdateCharData[512];
 uint8_t NotifyCharData[512];
 uint16_t Connection_Handle;
 /* USER CODE BEGIN PV */
-
+#define MAX_DATA_LENGTH 20
+static uint8_t  rxBuffer[MAX_DATA_LENGTH];
+static uint16_t rxDataLength = 0;
+static uint8_t  newDataReceived = 0;
+static uint8_t  notificationsEnabled = 0;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -83,7 +87,7 @@ static void Custom_My_tx_char_Update_Char(void);
 static void Custom_My_tx_char_Send_Notification(void);
 
 /* USER CODE BEGIN PFP */
-
+uint8_t Send_Data_To_Phone(uint8_t *data, uint16_t length);
 /* USER CODE END PFP */
 
 /* Functions Definition ------------------------------------------------------*/
@@ -101,19 +105,44 @@ void Custom_STM_App_Notification(Custom_STM_App_Notification_evt_t *pNotificatio
     /* My_Services */
     case CUSTOM_STM_MY_TX_CHAR_NOTIFY_ENABLED_EVT:
       /* USER CODE BEGIN CUSTOM_STM_MY_TX_CHAR_NOTIFY_ENABLED_EVT */
-
+    	notificationsEnabled = 1;
       /* USER CODE END CUSTOM_STM_MY_TX_CHAR_NOTIFY_ENABLED_EVT */
       break;
 
     case CUSTOM_STM_MY_TX_CHAR_NOTIFY_DISABLED_EVT:
       /* USER CODE BEGIN CUSTOM_STM_MY_TX_CHAR_NOTIFY_DISABLED_EVT */
-
+    	notificationsEnabled = 0;
       /* USER CODE END CUSTOM_STM_MY_TX_CHAR_NOTIFY_DISABLED_EVT */
       break;
 
     case CUSTOM_STM_MY_RX_CHAR_WRITE_NO_RESP_EVT:
       /* USER CODE BEGIN CUSTOM_STM_MY_RX_CHAR_WRITE_NO_RESP_EVT */
+    	uint16_t receivedLength = pNotification->DataTransfered.Length;
+    	        uint8_t *receivedData = pNotification->DataTransfered.pPayload;
 
+    	        // Copy received data to our safe buffer
+    	        memcpy(rxBuffer, receivedData, receivedLength);
+    	        rxDataLength = receivedLength;
+
+    	        // Echo back the received data to confirm (optional debug print)
+    	        APP_DBG_MSG(">> Data received from phone! Length: %d bytes\n", rxDataLength);
+
+    	        // Example processing:
+    	        if (rxDataLength >= 1) {
+    	            switch (rxBuffer[0]) {
+    	                case 0x01:
+    	                    APP_DBG_MSG(">> Command 01 received\n");
+    	                    // Do something
+    	                    break;
+    	                case 0x02:
+    	                    APP_DBG_MSG(">> Command 02 received\n");
+    	                    // Do something else
+    	                    break;
+    	                default:
+    	                    APP_DBG_MSG(">> Unknown command: 0x%02X\n", rxBuffer[0]);
+    	                    break;
+    	            }
+    	        }
       /* USER CODE END CUSTOM_STM_MY_RX_CHAR_WRITE_NO_RESP_EVT */
       break;
 
@@ -181,7 +210,36 @@ void Custom_APP_Init(void)
 }
 
 /* USER CODE BEGIN FD */
+uint8_t Send_Data_To_Phone(uint8_t *data, uint16_t length)
+{
+    if (!notificationsEnabled) return 0;
+    if (length > MAX_DATA_LENGTH) length = MAX_DATA_LENGTH;
+    memcpy(UpdateCharData, data, length);
+    Custom_STM_App_Update_Char(CUSTOM_STM_MY_TX_CHAR, UpdateCharData);
+    return 1;
+}
 
+uint16_t Get_Data_From_Phone(uint8_t *buffer, uint16_t maxLength) {
+    uint16_t copyLength = (rxDataLength < maxLength) ? rxDataLength : maxLength;
+    memcpy(buffer, rxBuffer, copyLength);
+    return copyLength;
+}
+
+/**
+ * @brief Simple test function to send an array
+ */
+void Send_Test_Data(void) {
+    static uint8_t counter = 0;
+    uint8_t testData[4];
+
+    testData[0] = 0xAA;  // Header
+    testData[1] = counter++;
+    testData[2] = ~counter;
+    testData[3] = 0x55;  // Footer
+
+    Send_Data_To_Phone(testData, 4);
+    APP_DBG_MSG(">> Sent test data: counter = %d\n", testData[1]);
+}
 /* USER CODE END FD */
 
 /*************************************************************
@@ -231,5 +289,7 @@ __USED void Custom_My_tx_char_Send_Notification(void) /* Property Notification *
 }
 
 /* USER CODE BEGIN FD_LOCAL_FUNCTIONS*/
+
+
 
 /* USER CODE END FD_LOCAL_FUNCTIONS*/
