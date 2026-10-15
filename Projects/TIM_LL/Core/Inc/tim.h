@@ -40,6 +40,8 @@ void MX_TIM2_Init(void);
 
 /* USER CODE BEGIN Prototypes */
 void TIM_Delay_ms(TIM_TypeDef *TIMx, uint32_t ms);
+void PWM_Start(TIM_TypeDef *TIMx, uint8_t channel);
+void PWM_SetDutyCycle(TIM_TypeDef *TIMx, uint8_t channel, float duty_cycle);
 /* USER CODE END Prototypes */
 
 #ifdef __cplusplus
