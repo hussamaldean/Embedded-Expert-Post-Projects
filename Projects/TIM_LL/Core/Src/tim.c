@@ -42,15 +42,14 @@ void MX_TIM2_Init(void)
   /* USER CODE BEGIN TIM2_Init 1 */
 
   /* USER CODE END TIM2_Init 1 */
-  TIM_InitStruct.Prescaler = 0;
-  TIM_InitStruct.CounterMode = LL_TIM_COUNTERMODE_DOWN;
-  TIM_InitStruct.Autoreload = 100;
+  TIM_InitStruct.Prescaler = 15999;
+  TIM_InitStruct.CounterMode = LL_TIM_COUNTERMODE_UP;
+  TIM_InitStruct.Autoreload = 1000-LL_TIM_IC_FILTER_FDIV1_N2;
   TIM_InitStruct.ClockDivision = LL_TIM_CLOCKDIVISION_DIV1;
   LL_TIM_Init(TIM2, &TIM_InitStruct);
   LL_TIM_DisableARRPreload(TIM2);
   LL_TIM_SetClockSource(TIM2, LL_TIM_CLOCKSOURCE_INTERNAL);
-  LL_TIM_OC_EnablePreload(TIM2, LL_TIM_CHANNEL_CH1);
-  TIM_OC_InitStruct.OCMode = LL_TIM_OCMODE_PWM1;
+  TIM_OC_InitStruct.OCMode = LL_TIM_OCMODE_TOGGLE;
   TIM_OC_InitStruct.OCState = LL_TIM_OCSTATE_DISABLE;
   TIM_OC_InitStruct.OCNState = LL_TIM_OCSTATE_DISABLE;
   TIM_OC_InitStruct.CompareValue = 0;
@@ -60,13 +59,14 @@ void MX_TIM2_Init(void)
   LL_TIM_SetTriggerOutput(TIM2, LL_TIM_TRGO_RESET);
   LL_TIM_DisableMasterSlaveMode(TIM2);
   /* USER CODE BEGIN TIM2_Init 2 */
-
+  TIM_InitStruct.Autoreload = 1000;
+  LL_TIM_Init(TIM2, &TIM_InitStruct);
   /* USER CODE END TIM2_Init 2 */
   LL_AHB1_GRP1_EnableClock(LL_AHB1_GRP1_PERIPH_GPIOA);
     /**TIM2 GPIO Configuration
-    PA0-WKUP     ------> TIM2_CH1
+    PA5     ------> TIM2_CH1
     */
-  GPIO_InitStruct.Pin = LL_GPIO_PIN_0;
+  GPIO_InitStruct.Pin = LL_GPIO_PIN_5;
   GPIO_InitStruct.Mode = LL_GPIO_MODE_ALTERNATE;
   GPIO_InitStruct.Speed = LL_GPIO_SPEED_FREQ_LOW;
   GPIO_InitStruct.OutputType = LL_GPIO_OUTPUT_PUSHPULL;
@@ -182,5 +182,49 @@ void PWM_SetDutyCycle(TIM_TypeDef *TIMx, uint8_t channel, float duty_cycle)
             return; // Invalid channel
     }
 }
+
+/**
+ * @brief  Start Output Compare output on a specific timer channel
+ * @param  TIMx: Timer instance (e.g., TIM2, TIM3, TIM4, TIM5)
+ * @param  channel: Channel number (1-4)
+ * @retval None
+ *
+ * @note   Assumes timer (PSC, ARR, OCxM, GPIO AF) is already configured
+ *         via CubeMX. This function enables the channel and starts the counter.
+ */
+void OC_Start(TIM_TypeDef *TIMx, uint8_t channel)
+{
+    switch (channel)
+    {
+        case 1: LL_TIM_CC_EnableChannel(TIMx, LL_TIM_CHANNEL_CH1); break;
+        case 2: LL_TIM_CC_EnableChannel(TIMx, LL_TIM_CHANNEL_CH2); break;
+        case 3: LL_TIM_CC_EnableChannel(TIMx, LL_TIM_CHANNEL_CH3); break;
+        case 4: LL_TIM_CC_EnableChannel(TIMx, LL_TIM_CHANNEL_CH4); break;
+        default: return;
+    }
+
+    LL_TIM_EnableCounter(TIMx);
+    LL_TIM_GenerateEvent_UPDATE(TIMx);
+}
+
+/**
+ * @brief  Set the compare value on a specific timer channel (OC mode)
+ * @param  TIMx: Timer instance (e.g., TIM2, TIM3, TIM4, TIM5)
+ * @param  channel: Channel number (1-4)
+ * @param  compare: Compare value (caller is responsible for keeping it <= ARR)
+ * @retval None
+ */
+void OC_SetCompare(TIM_TypeDef *TIMx, uint8_t channel, uint32_t compare)
+{
+    switch (channel)
+    {
+        case 1: LL_TIM_OC_SetCompareCH1(TIMx, compare); break;
+        case 2: LL_TIM_OC_SetCompareCH2(TIMx, compare); break;
+        case 3: LL_TIM_OC_SetCompareCH3(TIMx, compare); break;
+        case 4: LL_TIM_OC_SetCompareCH4(TIMx, compare); break;
+        default: return;
+    }
+}
+
 /* USER CODE END 1 */
 

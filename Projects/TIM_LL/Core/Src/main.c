@@ -90,9 +90,11 @@ int main(void)
   MX_TIM2_Init();
   /* USER CODE BEGIN 2 */
   /* Start PWM on TIM2 Channel 1 */
-  PWM_Start(TIM2, 1);
+  //PWM_Start(TIM2, 1);
   /*Set duty cycle to 75%*/
-  PWM_SetDutyCycle(TIM2, 1, 75.0f);
+  //PWM_SetDutyCycle(TIM2, 1, 75.0f);
+  OC_SetCompare(TIM2, 1, 0);
+  OC_Start(TIM2, 1);
   /* USER CODE END 2 */
 
   /* Infinite loop */
