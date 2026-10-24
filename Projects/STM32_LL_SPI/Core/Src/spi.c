@@ -72,7 +72,9 @@ void MX_SPI1_Init(void)
   LL_SPI_Init(SPI1, &SPI_InitStruct);
   LL_SPI_SetStandard(SPI1, LL_SPI_PROTOCOL_MOTOROLA);
   /* USER CODE BEGIN SPI1_Init 2 */
-
+  SPI_InitStruct.ClockPolarity = LL_SPI_POLARITY_HIGH;
+  SPI_InitStruct.ClockPhase = LL_SPI_PHASE_2EDGE;
+  LL_SPI_Init(SPI1, &SPI_InitStruct);
   /* USER CODE END SPI1_Init 2 */
 
 }
@@ -96,6 +98,37 @@ void SPI_TransmitBytes(SPI_TypeDef *SPIx, const uint8_t *pData, uint16_t Size)
 
 	/* Wait until the last byte is fully shifted out of the shift register */
 	while (LL_SPI_IsActiveFlag_BSY(SPIx)) {}
+
+}
+
+void SPI_ReceiveBytes(SPI_TypeDef *SPIx,  uint8_t *pData, uint16_t Size)
+{
+
+	uint8_t SPI_DUMMY_BYTE=0xFF;
+
+	LL_SPI_Enable(SPIx);
+
+	/* Full-duplex leftover cleanup: every byte transmitted by a previous
+	       call was also received but never read, so RXNE (and possibly OVR)
+	       may still be set. Reading DR discards it; the extra SR read completes
+	       the OVR clear sequence required by RM0090. */
+	(void)LL_SPI_ReceiveData8(SPIx);
+	(void)SPIx->SR;
+
+	for (uint16_t i = 0U; i < Size; i++)
+	    {
+
+	        LL_SPI_TransmitData8(SPIx, SPI_DUMMY_BYTE);
+
+	        /* Wait for the byte coming back from the slave */
+	        while (!LL_SPI_IsActiveFlag_RXNE(SPIx));
+
+
+	        pData[i] = LL_SPI_ReceiveData8(SPIx);
+	    }
+
+	    /* Let the last byte finish before releasing CS */
+	    while (LL_SPI_IsActiveFlag_BSY(SPIx)) {}
 
 }
 /* USER CODE END 1 */

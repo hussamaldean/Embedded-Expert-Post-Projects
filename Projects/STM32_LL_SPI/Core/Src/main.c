@@ -23,7 +23,7 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-
+#include "adxl345.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -33,8 +33,7 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-#define CS_LOW()    LL_GPIO_ResetOutputPin(GPIOA, LL_GPIO_PIN_0)
-#define CS_HIGH()   LL_GPIO_SetOutputPin(GPIOA, LL_GPIO_PIN_0)
+
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -45,8 +44,7 @@
 /* Private variables ---------------------------------------------------------*/
 
 /* USER CODE BEGIN PV */
-#define DataSize 5
-uint8_t dataBuffer[DataSize];
+accleration_values_t accleration_values;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -91,10 +89,7 @@ int main(void)
   MX_GPIO_Init();
   MX_SPI1_Init();
   /* USER CODE BEGIN 2 */
-for (int i=0;i< DataSize; i++)
-	{
-		dataBuffer[i]=i+1;
-	}
+  adxl345_init(accl_4g);
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -104,10 +99,9 @@ for (int i=0;i< DataSize; i++)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-	  CS_LOW();
-	  SPI_TransmitBytes(SPI1,dataBuffer,DataSize);
-	  CS_HIGH();
-	  HAL_Delay(1);
+	  adxl345_update();
+	  adxl345_get_values(&accleration_values);
+	  HAL_Delay(50);
 
 
   }

@@ -40,6 +40,8 @@ void MX_SPI1_Init(void);
 
 /* USER CODE BEGIN Prototypes */
 void SPI_TransmitBytes(SPI_TypeDef *SPIx, const uint8_t *pData, uint16_t Size);
+
+void SPI_ReceiveBytes(SPI_TypeDef *SPIx,  uint8_t *pData, uint16_t Size);
 /* USER CODE END Prototypes */
 
 #ifdef __cplusplus
