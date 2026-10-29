@@ -20,6 +20,7 @@
 #include "main.h"
 #include "adc.h"
 #include "dma.h"
+#include "tim.h"
 #include "gpio.h"
 
 /* Private includes ----------------------------------------------------------*/
@@ -56,7 +57,10 @@ void SystemClock_Config(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-
+void ADC_DMA_TransferCompleteCallback(void)
+{
+	LL_GPIO_TogglePin(GPIOA, LL_GPIO_PIN_5);
+}
 /* USER CODE END 0 */
 
 /**
@@ -90,9 +94,10 @@ int main(void)
   MX_GPIO_Init();
   MX_DMA_Init();
   MX_ADC1_Init();
+  MX_TIM2_Init();
   /* USER CODE BEGIN 2 */
   //ADC_Start_DMA_SingleCHannel(&adc_value);
-  ADC_Start_DMA_MultiChannnel(adc_value,4);
+  ADC_Start_DMA_MultiChannnel_TIM2Trig(adc_value,4);
   /* USER CODE END 2 */
 
   /* Infinite loop */

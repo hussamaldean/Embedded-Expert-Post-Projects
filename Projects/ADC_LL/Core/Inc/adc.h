@@ -51,6 +51,7 @@ void ADC_Cont_IT_Start(void);
 
 void ADC_Start_DMA_SingleCHannel(uint16_t *adcBuff);
 void ADC_Start_DMA_MultiChannnel(uint16_t *adcBuff, uint16_t len);
+void ADC_Start_DMA_MultiChannnel_TIM2Trig(uint16_t *adcBuff, uint16_t len);
 /* USER CODE END Prototypes */
 
 #ifdef __cplusplus

@@ -21,6 +21,9 @@
 #include "adc.h"
 
 /* USER CODE BEGIN 0 */
+
+#include "tim.h"
+
 volatile uint8_t adc_ready;
 
 volatile uint16_t adc_result;
@@ -82,6 +85,10 @@ void MX_ADC1_Init(void)
 
   LL_DMA_DisableFifoMode(DMA2, LL_DMA_STREAM_0);
 
+  /* ADC1 interrupt Init */
+  NVIC_SetPriority(ADC_IRQn, NVIC_EncodePriority(NVIC_GetPriorityGrouping(),0, 0));
+  NVIC_EnableIRQ(ADC_IRQn);
+
   /* USER CODE BEGIN ADC1_Init 1 */
 
   /* USER CODE END ADC1_Init 1 */
@@ -92,16 +99,17 @@ void MX_ADC1_Init(void)
   ADC_InitStruct.DataAlignment = LL_ADC_DATA_ALIGN_RIGHT;
   ADC_InitStruct.SequencersScanMode = LL_ADC_SEQ_SCAN_ENABLE;
   LL_ADC_Init(ADC1, &ADC_InitStruct);
-  ADC_REG_InitStruct.TriggerSource = LL_ADC_REG_TRIG_SOFTWARE;
+  ADC_REG_InitStruct.TriggerSource = LL_ADC_REG_TRIG_EXT_TIM2_TRGO;
   ADC_REG_InitStruct.SequencerLength = LL_ADC_REG_SEQ_SCAN_ENABLE_4RANKS;
   ADC_REG_InitStruct.SequencerDiscont = LL_ADC_REG_SEQ_DISCONT_DISABLE;
-  ADC_REG_InitStruct.ContinuousMode = LL_ADC_REG_CONV_CONTINUOUS;
+  ADC_REG_InitStruct.ContinuousMode = LL_ADC_REG_CONV_SINGLE;
   ADC_REG_InitStruct.DMATransfer = LL_ADC_REG_DMA_TRANSFER_UNLIMITED;
   LL_ADC_REG_Init(ADC1, &ADC_REG_InitStruct);
   LL_ADC_REG_SetFlagEndOfConversion(ADC1, LL_ADC_REG_FLAG_EOC_SEQUENCE_CONV);
   ADC_CommonInitStruct.CommonClock = LL_ADC_CLOCK_SYNC_PCLK_DIV8;
   ADC_CommonInitStruct.Multimode = LL_ADC_MULTI_INDEPENDENT;
   LL_ADC_CommonInit(__LL_ADC_COMMON_INSTANCE(ADC1), &ADC_CommonInitStruct);
+  LL_ADC_REG_StartConversionExtTrig(ADC1, LL_ADC_REG_TRIG_EXT_RISING);
 
   /** Configure Regular Channel
   */
@@ -218,5 +226,82 @@ void ADC_IRQHandler (void)
 		LL_ADC_ClearFlag_EOCS(ADC1);
 	}
 }
+
+
+
+
+
+/* Default weak implementations */
+__weak void ADC_DMA_TransferCompleteCallback(void)
+{
+
+}
+
+__weak void ADC_DMA_HalfTransferCallback(void)
+{
+
+}
+
+__weak void ADC_DMA_TransferErrorCallback(void)
+{
+}
+
+void ADC_Start_DMA_MultiChannnel_TIM2Trig(uint16_t *adcBuff, uint16_t len)
+{
+    /* Stop DMA */
+    LL_DMA_DisableStream(DMA2, LL_DMA_STREAM_0);
+    while (LL_DMA_IsEnabledStream(DMA2, LL_DMA_STREAM_0));
+
+
+
+    /* Reconfigure DMA */
+    LL_DMA_SetPeriphAddress(DMA2, LL_DMA_STREAM_0,
+        LL_ADC_DMA_GetRegAddr(ADC1, LL_ADC_DMA_REG_REGULAR_DATA));
+    LL_DMA_SetMemoryAddress(DMA2, LL_DMA_STREAM_0, (uint32_t)adcBuff);
+    LL_DMA_SetDataLength(DMA2, LL_DMA_STREAM_0, len);
+
+    /* Enable DMA interrupts + NVIC */
+    LL_DMA_EnableIT_TC(DMA2, LL_DMA_STREAM_0);
+    LL_DMA_EnableIT_TE(DMA2, LL_DMA_STREAM_0);
+    /* LL_DMA_EnableIT_HT(DMA2, LL_DMA_STREAM_0); */  /* only if needed */
+    NVIC_SetPriority(DMA2_Stream0_IRQn,
+        NVIC_EncodePriority(NVIC_GetPriorityGrouping(), 0, 0));
+    NVIC_EnableIRQ(DMA2_Stream0_IRQn);
+
+    /* Disable ADC to allow reconfiguration */
+    LL_ADC_Disable(ADC1);
+    while (LL_ADC_IsEnabled(ADC1));
+
+
+
+    /* Arm DMA first, then enable ADC (no SW start) */
+    LL_DMA_EnableStream(DMA2, LL_DMA_STREAM_0);
+    LL_ADC_Enable(ADC1);
+
+    /* Start TIM2 so TRGO begins driving conversions */
+    LL_TIM_SetCounter(TIM2, 0);
+    LL_TIM_EnableCounter(TIM2);
+}
+
+void DMA2_Stream0_IRQHandler(void)
+{
+    if (LL_DMA_IsActiveFlag_TC0(DMA2))
+    {
+        LL_DMA_ClearFlag_TC0(DMA2);
+        ADC_DMA_TransferCompleteCallback();
+    }
+    else if (LL_DMA_IsActiveFlag_HT0(DMA2))
+    {
+        LL_DMA_ClearFlag_HT0(DMA2);
+        ADC_DMA_HalfTransferCallback();
+    }
+    else if (LL_DMA_IsActiveFlag_TE0(DMA2))
+    {
+        LL_DMA_ClearFlag_TE0(DMA2);
+        ADC_DMA_TransferErrorCallback();
+    }
+}
+
+
 /* USER CODE END 1 */
 
