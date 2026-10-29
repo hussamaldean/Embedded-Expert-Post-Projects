@@ -260,14 +260,6 @@ void ADC_Start_DMA_MultiChannnel_TIM2Trig(uint16_t *adcBuff, uint16_t len)
     LL_DMA_SetMemoryAddress(DMA2, LL_DMA_STREAM_0, (uint32_t)adcBuff);
     LL_DMA_SetDataLength(DMA2, LL_DMA_STREAM_0, len);
 
-    /* Enable DMA interrupts + NVIC */
-    LL_DMA_EnableIT_TC(DMA2, LL_DMA_STREAM_0);
-    LL_DMA_EnableIT_TE(DMA2, LL_DMA_STREAM_0);
-    /* LL_DMA_EnableIT_HT(DMA2, LL_DMA_STREAM_0); */  /* only if needed */
-    NVIC_SetPriority(DMA2_Stream0_IRQn,
-        NVIC_EncodePriority(NVIC_GetPriorityGrouping(), 0, 0));
-    NVIC_EnableIRQ(DMA2_Stream0_IRQn);
-
     /* Disable ADC to allow reconfiguration */
     LL_ADC_Disable(ADC1);
     while (LL_ADC_IsEnabled(ADC1));
