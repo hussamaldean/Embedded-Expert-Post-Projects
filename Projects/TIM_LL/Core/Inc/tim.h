@@ -44,6 +44,7 @@ void PWM_Start(TIM_TypeDef *TIMx, uint8_t channel);
 void PWM_SetDutyCycle(TIM_TypeDef *TIMx, uint8_t channel, float duty_cycle);
 void OC_Start(TIM_TypeDef *TIMx, uint8_t channel);
 void OC_SetCompare(TIM_TypeDef *TIMx, uint8_t channel, uint32_t compare);
+void PWM_DMA_Start(uint32_t *buffer, uint32_t length);
 /* USER CODE END Prototypes */
 
 #ifdef __cplusplus

@@ -47,10 +47,15 @@
 /* USER CODE BEGIN PV */
 uint8_t txBuff[100];
 
-uint16_t counter;
+uint8_t counter;
 
 
 volatile uint8_t tx_completed;
+
+
+uint8_t rxBuff[100];
+volatile uint8_t rx_completed;
+
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -65,6 +70,14 @@ void soft_uart_tx_cplt_callback(void)
 {
 	tx_completed=1;
 }
+
+void soft_uart_rx_cplt_callback(uint8_t *buf, uint16_t size)
+{
+	rx_completed=1;
+	SoftUART_ReceiveToIdle_IT(rxBuff,100);
+
+}
+
 
 /* USER CODE END 0 */
 
@@ -100,6 +113,8 @@ int main(void)
   MX_TIM2_Init();
   /* USER CODE BEGIN 2 */
   SoftUART_Init();
+
+  SoftUART_ReceiveToIdle_IT(rxBuff,100);
   /* USER CODE END 2 */
 
   /* Infinite loop */

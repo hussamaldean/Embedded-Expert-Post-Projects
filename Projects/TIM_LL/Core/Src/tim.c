@@ -39,17 +39,39 @@ void MX_TIM2_Init(void)
   /* Peripheral clock enable */
   LL_APB1_GRP1_EnableClock(LL_APB1_GRP1_PERIPH_TIM2);
 
+  /* TIM2 DMA Init */
+
+  /* TIM2_CH1 Init */
+  LL_DMA_SetChannelSelection(DMA1, LL_DMA_STREAM_5, LL_DMA_CHANNEL_3);
+
+  LL_DMA_SetDataTransferDirection(DMA1, LL_DMA_STREAM_5, LL_DMA_DIRECTION_MEMORY_TO_PERIPH);
+
+  LL_DMA_SetStreamPriorityLevel(DMA1, LL_DMA_STREAM_5, LL_DMA_PRIORITY_LOW);
+
+  LL_DMA_SetMode(DMA1, LL_DMA_STREAM_5, LL_DMA_MODE_CIRCULAR);
+
+  LL_DMA_SetPeriphIncMode(DMA1, LL_DMA_STREAM_5, LL_DMA_PERIPH_NOINCREMENT);
+
+  LL_DMA_SetMemoryIncMode(DMA1, LL_DMA_STREAM_5, LL_DMA_MEMORY_INCREMENT);
+
+  LL_DMA_SetPeriphSize(DMA1, LL_DMA_STREAM_5, LL_DMA_PDATAALIGN_WORD);
+
+  LL_DMA_SetMemorySize(DMA1, LL_DMA_STREAM_5, LL_DMA_MDATAALIGN_WORD);
+
+  LL_DMA_DisableFifoMode(DMA1, LL_DMA_STREAM_5);
+
   /* USER CODE BEGIN TIM2_Init 1 */
 
   /* USER CODE END TIM2_Init 1 */
-  TIM_InitStruct.Prescaler = 15999;
+  TIM_InitStruct.Prescaler = 0;
   TIM_InitStruct.CounterMode = LL_TIM_COUNTERMODE_UP;
-  TIM_InitStruct.Autoreload = 1000-LL_TIM_IC_FILTER_FDIV1_N2;
+  TIM_InitStruct.Autoreload = 1600-LL_TIM_IC_FILTER_FDIV1_N2;
   TIM_InitStruct.ClockDivision = LL_TIM_CLOCKDIVISION_DIV1;
   LL_TIM_Init(TIM2, &TIM_InitStruct);
-  LL_TIM_DisableARRPreload(TIM2);
+  LL_TIM_EnableARRPreload(TIM2);
   LL_TIM_SetClockSource(TIM2, LL_TIM_CLOCKSOURCE_INTERNAL);
-  TIM_OC_InitStruct.OCMode = LL_TIM_OCMODE_TOGGLE;
+  LL_TIM_OC_EnablePreload(TIM2, LL_TIM_CHANNEL_CH1);
+  TIM_OC_InitStruct.OCMode = LL_TIM_OCMODE_PWM1;
   TIM_OC_InitStruct.OCState = LL_TIM_OCSTATE_DISABLE;
   TIM_OC_InitStruct.OCNState = LL_TIM_OCSTATE_DISABLE;
   TIM_OC_InitStruct.CompareValue = 0;
@@ -59,7 +81,7 @@ void MX_TIM2_Init(void)
   LL_TIM_SetTriggerOutput(TIM2, LL_TIM_TRGO_RESET);
   LL_TIM_DisableMasterSlaveMode(TIM2);
   /* USER CODE BEGIN TIM2_Init 2 */
-  TIM_InitStruct.Autoreload = 1000;
+  TIM_InitStruct.Autoreload = 1600;
   LL_TIM_Init(TIM2, &TIM_InitStruct);
   /* USER CODE END TIM2_Init 2 */
   LL_AHB1_GRP1_EnableClock(LL_AHB1_GRP1_PERIPH_GPIOA);
@@ -224,6 +246,27 @@ void OC_SetCompare(TIM_TypeDef *TIMx, uint8_t channel, uint32_t compare)
         case 4: LL_TIM_OC_SetCompareCH4(TIMx, compare); break;
         default: return;
     }
+}
+
+void PWM_DMA_Start(uint32_t *buffer, uint32_t length)
+{
+	/* Point the DMA stream at TIM2->CCR1 and at the user buffer */
+	LL_DMA_SetPeriphAddress(DMA1, LL_DMA_STREAM_5, (uint32_t)&TIM2->CCR1);
+	LL_DMA_SetMemoryAddress(DMA1, LL_DMA_STREAM_5, (uint32_t)buffer);
+	LL_DMA_SetDataLength(DMA1,    LL_DMA_STREAM_5, length);
+
+	/* Enable CC1 DMA request so each compare match pushes the next CCR1 */
+	LL_TIM_EnableDMAReq_CC1(TIM2);
+
+	/* Enable the DMA stream */
+	LL_DMA_EnableStream(DMA1, LL_DMA_STREAM_5);
+
+	/* Enable the PWM output and start the counter */
+	LL_TIM_CC_EnableChannel(TIM2, LL_TIM_CHANNEL_CH1);
+	LL_TIM_EnableCounter(TIM2);
+
+	/* Load the first CCR value immediately */
+	LL_TIM_GenerateEvent_UPDATE(TIM2);
 }
 
 /* USER CODE END 1 */

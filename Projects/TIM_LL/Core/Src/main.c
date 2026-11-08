@@ -18,6 +18,7 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
+#include "dma.h"
 #include "tim.h"
 #include "gpio.h"
 
@@ -44,6 +45,14 @@
 /* Private variables ---------------------------------------------------------*/
 
 /* USER CODE BEGIN PV */
+#include <math.h>
+
+#define PWM_SINE_SAMPLES   200
+#define PWM_ARR            1600
+#define PWM_CCR_MAX        PWM_ARR          /* 1600 */
+#define PWM_CCR_MIN        0
+
+uint32_t sine_table[PWM_SINE_SAMPLES];
 
 /* USER CODE END PV */
 
@@ -55,7 +64,16 @@ void SystemClock_Config(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-
+void PWM_SineTable_Init(void)
+{
+    for (uint32_t i = 0; i < PWM_SINE_SAMPLES; i++)
+    {
+        float phase = (2.0f * 3.14159265f * (float)i) / (float)PWM_SINE_SAMPLES;
+        float s     = sinf(phase);                       /* -1.0 .. +1.0 */
+        float norm  = (s + 1.0f) * 0.5f;                 /*  0.0 .. +1.0 */
+        sine_table[i] = (uint16_t)(norm * (float)PWM_CCR_MAX + 0.5f);
+    }
+}
 /* USER CODE END 0 */
 
 /**
@@ -87,14 +105,17 @@ int main(void)
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
+  MX_DMA_Init();
   MX_TIM2_Init();
   /* USER CODE BEGIN 2 */
   /* Start PWM on TIM2 Channel 1 */
   //PWM_Start(TIM2, 1);
   /*Set duty cycle to 75%*/
   //PWM_SetDutyCycle(TIM2, 1, 75.0f);
-  OC_SetCompare(TIM2, 1, 0);
-  OC_Start(TIM2, 1);
+  //OC_SetCompare(TIM2, 1, 0);
+  //OC_Start(TIM2, 1);
+  PWM_SineTable_Init();
+  PWM_DMA_Start(sine_table, PWM_SINE_SAMPLES);
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -127,10 +148,15 @@ void SystemClock_Config(void)
   /** Initializes the RCC Oscillators according to the specified parameters
   * in the RCC_OscInitTypeDef structure.
   */
-  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSI;
-  RCC_OscInitStruct.HSIState = RCC_HSI_ON;
-  RCC_OscInitStruct.HSICalibrationValue = RCC_HSICALIBRATION_DEFAULT;
-  RCC_OscInitStruct.PLL.PLLState = RCC_PLL_NONE;
+  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSE;
+  RCC_OscInitStruct.HSEState = RCC_HSE_ON;
+  RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
+  RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSE;
+  RCC_OscInitStruct.PLL.PLLM = 4;
+  RCC_OscInitStruct.PLL.PLLN = 100;
+  RCC_OscInitStruct.PLL.PLLP = RCC_PLLP_DIV2;
+  RCC_OscInitStruct.PLL.PLLQ = 2;
+  RCC_OscInitStruct.PLL.PLLR = 2;
   if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
   {
     Error_Handler();
@@ -140,12 +166,12 @@ void SystemClock_Config(void)
   */
   RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK|RCC_CLOCKTYPE_SYSCLK
                               |RCC_CLOCKTYPE_PCLK1|RCC_CLOCKTYPE_PCLK2;
-  RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_HSI;
+  RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLRCLK;
   RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
-  RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV1;
-  RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV1;
+  RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV4;
+  RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV2;
 
-  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_0) != HAL_OK)
+  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_3) != HAL_OK)
   {
     Error_Handler();
   }
